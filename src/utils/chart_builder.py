@@ -25,6 +25,9 @@ class ChartBuilder:
         """Load and process stock data."""
         period_config = ChartBuilder.PERIOD_MAPPING.get(time_period, ChartBuilder.PERIOD_MAPPING["1mo"])
         
+        if not ticker or not ticker.strip():
+            raise ValueError("No ticker symbol provided. Please enter a valid stock symbol before updating.")
+
         data = yf.download(
             ticker,
             period=period_config["period"],
@@ -32,7 +35,10 @@ class ChartBuilder:
             auto_adjust=True,
             progress=False,
         )
-        
+
+        if data.empty:
+            raise ValueError(f"No data found for ticker '{ticker}'. Please check the symbol and try again.")
+
         # Handle MultiIndex columns (multiple tickers) vs single ticker
         if isinstance(data.columns, pd.MultiIndex):
             data = data.xs(ticker, axis=1, level=1)
