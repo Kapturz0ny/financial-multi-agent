@@ -123,32 +123,33 @@ with st.sidebar.expander("Select Indicators", expanded=True):
 sidebar_col1, sidebar_col2 = st.sidebar.columns(spec=[0.4, 0.6], gap="small")
 
 if sidebar_col1.button("Update", type="primary", use_container_width=True):
-    try:
-        data = load_stock_data(ticker, next(filter(lambda x: x["period"] == time_period, INTERVAL_MAPPING)))
+    with st.spinner("Loading stock data…"):
+        try:
+            data = load_stock_data(ticker, next(filter(lambda x: x["period"] == time_period, INTERVAL_MAPPING)))
 
-        last_close, change, pct_change, high, low, volume = calculate_metrics(data)
-        st.session_state.stock_metrics = {
-            "last_close": last_close,
-            "change": change,
-            "pct_change": pct_change,
-            "high": high,
-            "low": low,
-            "volume": volume,
-        }
+            last_close, change, pct_change, high, low, volume = calculate_metrics(data)
+            st.session_state.stock_metrics = {
+                "last_close": last_close,
+                "change": change,
+                "pct_change": pct_change,
+                "high": high,
+                "low": low,
+                "volume": volume,
+            }
 
-        # Add selected technical indicators
-        data = add_technical_indicators(data, indicators)
+            # Add selected technical indicators
+            data = add_technical_indicators(data, indicators)
 
-        # Build chart using ChartBuilder
-        fig = ChartBuilder.build_chart(data, ticker, indicators, time_period, chart_type)
+            # Build chart using ChartBuilder
+            fig = ChartBuilder.build_chart(data, ticker, indicators, time_period, chart_type)
 
-        st.session_state.stock_fig = fig
-        st.session_state.selected_indicators = indicators
-    except ValueError as e:
-        st.error(str(e))
-    except Exception as e:
-        st.error("Unable to load stock data. Please check the ticker symbol and your internet connection.")
-        st.exception(e)
+            st.session_state.stock_fig = fig
+            st.session_state.selected_indicators = indicators
+        except ValueError as e:
+            st.error(str(e))
+        except Exception as e:
+            st.error("Unable to load stock data. Please check the ticker symbol and your internet connection.")
+            st.exception(e)
 
 if sidebar_col2.button("Generate report", type="primary", use_container_width=True):
     with st.spinner("Running multi-agent analysis…"):
