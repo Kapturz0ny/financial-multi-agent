@@ -1,6 +1,7 @@
-from crewai import Task, Agent
 from enum import Enum
 from typing import Optional
+
+from crewai import Agent, Task
 
 
 class TaskType(Enum):

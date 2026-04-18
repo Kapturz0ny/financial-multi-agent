@@ -1,12 +1,11 @@
-from crewai import Agent, LLM
+from crewai import LLM, Agent
 
-from src.tools.reddit_sentiment_analysis_tool import analyse_reddit
+from src.tools.alphavantage_tools import analyse_alphavantage_sentiment
+from src.tools.finnhub_sentiment_tool import analyse_finnhub_sentiment
 from src.tools.yahoo_analysis_tool import fetch_yahoo_analysis
 from src.tools.yahoo_fundamental_analysis_tool import analyse_fundamentals
 from src.tools.yahoo_news_tool import fetch_yahoo_news
 from src.tools.yahoo_technical_analysis_tool import analyse_technical_indicators
-from src.tools.finnhub_sentiment_tool import analyse_finnhub_sentiment
-from src.tools.alphavantage_tools import analyse_alphavantage_sentiment
 
 
 def create_researcher_agent(llm: LLM) -> Agent:

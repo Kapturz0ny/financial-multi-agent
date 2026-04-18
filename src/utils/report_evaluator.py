@@ -113,7 +113,7 @@ class ReportEvaluator:
         markdown_headers = len(re.findall(r'^#{1,3}\s+.+$', text, re.MULTILINE))
         bold_headers = len(re.findall(r'^\*\*[^*]+\*\*:?\s*$', text, re.MULTILINE))
         headers = markdown_headers + bold_headers
-        
+
         paragraphs = len([p for p in text.split('\n\n') if len(p.strip()) > 50])
 
         # Calculate structure score (0-100)
@@ -149,29 +149,29 @@ class ReportEvaluator:
         # Financial metrics
         financial_metrics = [
             # Valuation Ratios
-            'P/E', 'Price/Earnings', 'P/S', 'Price-to-Sales', 'P/B', 'Price-to-Book', 
-            
+            'P/E', 'Price/Earnings', 'P/S', 'Price-to-Sales', 'P/B', 'Price-to-Book',
+
             # Profitability Metrics
             'EPS', 'ROE', 'ROA', 'ROI', 'EBITDA', 'EBIT', 'Profit Margin',
             'Operating Margin', 'Gross Margin', 'Net Margin',
-            
+
             # Growth Metrics
             'Revenue', 'Revenue Growth', 'Earnings Growth', 'EPS Growth',
             'Year-over-Year', 'YoY', 'QoQ', 'Quarter-over-Quarter',
-            
+
             # Financial Health
             'Debt-to-Equity', 'D/E', 'Current Ratio', 'Total Debt',
             'Cash Flow', 'Free Cash Flow', 'FCF', 'Operating Cash Flow',
-            
+
             # Market Metrics
             'Market Cap', 'Market Capitalization', 'Volume',
-            
+
             # Dividend Metrics
             'Dividend', 'Dividend Yield', 'Dividend Growth',
-            
+
             # Technical Indicators
             'RSI', 'MACD', 'SMA', 'Moving Average', 'EMA', 'Exponential Moving Average',
-            
+
             # Other
             'Beta', 'Volatility', 'Analysts', 'Target Price', 'Price Target',
             'Rating', 'Recommendation'

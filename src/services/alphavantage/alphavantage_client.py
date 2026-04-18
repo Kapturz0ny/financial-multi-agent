@@ -1,5 +1,6 @@
 import os
-from typing import Dict, List
+from typing import Dict
+
 import requests
 from dotenv import load_dotenv
 
@@ -52,7 +53,7 @@ class AlphaVantageClient:
                 'symbol': symbol
             }
             data = self._make_request(params)
-            
+
             return {
                 'symbol': data.get('Symbol', symbol),
                 'name': data.get('Name', 'N/A'),
@@ -76,7 +77,7 @@ class AlphaVantageClient:
             return {'symbol': symbol, 'name': 'N/A'}
 
     def get_news_sentiment(
-        self, 
+        self,
         tickers: str,
         topics: str = None,
         limit: int = 50
@@ -98,17 +99,17 @@ class AlphaVantageClient:
                 'tickers': tickers,
                 'limit': limit
             }
-            
+
             if topics:
                 params['topics'] = topics
-            
+
             data = self._make_request(params)
-            
+
             feed = data.get('feed', [])
-            
+
             articles = []
             sentiment_scores = []
-            
+
             for item in feed:
                 # Get ticker-specific sentiment
                 ticker_sentiment = None
@@ -116,7 +117,7 @@ class AlphaVantageClient:
                     if ts.get('ticker', '').upper() == tickers.split(',')[0].upper():
                         ticker_sentiment = ts
                         break
-                
+
                 if ticker_sentiment:
                     sentiment_score = float(ticker_sentiment.get('ticker_sentiment_score', 0))
                     sentiment_label = ticker_sentiment.get('ticker_sentiment_label', 'Neutral')
@@ -124,7 +125,7 @@ class AlphaVantageClient:
                 else:
                     sentiment_score = 0
                     sentiment_label = 'Neutral'
-                
+
                 articles.append({
                     'title': item.get('title', ''),
                     'summary': item.get('summary', ''),
@@ -136,10 +137,10 @@ class AlphaVantageClient:
                     'ticker_sentiment_score': sentiment_score,
                     'ticker_sentiment_label': sentiment_label
                 })
-            
+
             # Calculate aggregate sentiment
             avg_sentiment = sum(sentiment_scores) / len(sentiment_scores) if sentiment_scores else 0
-            
+
             # Count sentiment labels
             sentiment_counts = {
                 'Bullish': 0,
@@ -148,12 +149,12 @@ class AlphaVantageClient:
                 'Somewhat-Bearish': 0,
                 'Bearish': 0
             }
-            
+
             for article in articles:
                 label = article['ticker_sentiment_label']
                 if label in sentiment_counts:
                     sentiment_counts[label] += 1
-            
+
             return {
                 'ticker': tickers.split(',')[0],
                 'articles_analyzed': len(articles),
@@ -161,7 +162,7 @@ class AlphaVantageClient:
                 'sentiment_distribution': sentiment_counts,
                 'articles': articles[:limit]
             }
-            
+
         except Exception as e:
             print(f"Error fetching news sentiment: {e}")
             return {
@@ -188,10 +189,10 @@ class AlphaVantageClient:
                 'symbol': symbol
             }
             data = self._make_request(params)
-            
+
             quarterly = data.get('quarterlyEarnings', [])[:4]  # Last 4 quarters
             annual = data.get('annualEarnings', [])[:3]  # Last 3 years
-            
+
             return {
                 'symbol': symbol,
                 'quarterly_earnings': [
@@ -227,13 +228,13 @@ class AlphaVantageClient:
             String summary of sentiment analysis
         """
         news_data = self.get_news_sentiment(symbol)
-        
+
         if news_data['articles_analyzed'] == 0:
             return f"No recent sentiment data available for {symbol}."
-        
+
         avg_score = news_data['average_sentiment_score']
         dist = news_data['sentiment_distribution']
-        
+
         # Determine overall sentiment
         if avg_score > 0.15:
             overall = "Bullish"
@@ -241,7 +242,7 @@ class AlphaVantageClient:
             overall = "Bearish"
         else:
             overall = "Neutral"
-        
+
         summary = f"""
 Alpha Vantage Sentiment Analysis for {symbol}:
 - Articles Analyzed: {news_data['articles_analyzed']}
@@ -257,8 +258,8 @@ Sentiment Distribution:
 
 Top Headlines:
 """
-        
+
         for i, article in enumerate(news_data['articles'][:5], 1):
             summary += f"{i}. {article['title']} (Sentiment: {article['ticker_sentiment_label']})\n"
-        
+
         return summary.strip()

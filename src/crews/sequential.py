@@ -1,15 +1,15 @@
 from time import time
 
-from crewai import Crew, LLM
+from crewai import LLM, Crew
 
+from src.config import LLMConfig
 from src.crews.agents_definitions import (
-    create_researcher_agent,
-    create_technical_analyst_agent,
     create_fundamental_analyst_agent,
     create_reporter_agent,
+    create_researcher_agent,
+    create_technical_analyst_agent,
 )
-from src.crews.tasks_definitions import create_task, TaskType
-from src.config import LLMConfig
+from src.crews.tasks_definitions import TaskType, create_task
 
 
 class SequentialStockAnalysisCrew:

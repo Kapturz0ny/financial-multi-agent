@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timedelta
-from typing import List, Dict
+from typing import Dict, List
 
 import finnhub
 from dotenv import load_dotenv
@@ -20,12 +20,12 @@ class FinnhubClient:
         api_key = os.getenv("FINNHUB_API_KEY")
         if not api_key:
             raise ValueError("FINNHUB_API_KEY not found in environment variables")
-        
+
         self.client = finnhub.Client(api_key=api_key)
 
     def get_company_news(
-        self, 
-        symbol: str, 
+        self,
+        symbol: str,
         days_back: int = 30
     ) -> List[Dict]:
         """
@@ -40,13 +40,13 @@ class FinnhubClient:
         """
         end_date = datetime.now()
         start_date = end_date - timedelta(days=days_back)
-        
+
         news = self.client.company_news(
             symbol,
             _from=start_date.strftime('%Y-%m-%d'),
             to=end_date.strftime('%Y-%m-%d')
         )
-        
+
         formatted_news = []
         for article in news:
             formatted_news.append({
@@ -57,11 +57,11 @@ class FinnhubClient:
                 'url': article.get('url', ''),
                 'sentiment': self._categorize_sentiment(article.get('sentiment', 0))
             })
-        
+
         return formatted_news
 
     def get_market_news(
-        self, 
+        self,
         category: str = 'general',
         min_count: int = 20
     ) -> List[Dict]:
@@ -76,7 +76,7 @@ class FinnhubClient:
             List of market news articles
         """
         news = self.client.general_news(category, minid=0)
-        
+
         formatted_news = []
         for article in news[:min_count]:
             formatted_news.append({
@@ -87,11 +87,11 @@ class FinnhubClient:
                 'url': article.get('url', ''),
                 'category': article.get('category', '')
             })
-        
+
         return formatted_news
 
     def get_social_sentiment(
-        self, 
+        self,
         symbol: str
     ) -> Dict:
         """
@@ -107,7 +107,7 @@ class FinnhubClient:
         """
         try:
             sentiment = self.client.stock_social_sentiment(symbol)
-            
+
             if not sentiment or 'reddit' not in sentiment:
                 return {
                     'reddit_sentiment': 0,
@@ -116,19 +116,19 @@ class FinnhubClient:
                     'twitter_mention': 0,
                     'overall_sentiment': 'neutral'
                 }
-            
+
             reddit_data = sentiment.get('reddit', [])
             twitter_data = sentiment.get('twitter', [])
-            
+
             # Calculate average sentiment
             reddit_sentiment = sum(item.get('score', 0) for item in reddit_data) / len(reddit_data) if reddit_data else 0
             twitter_sentiment = sum(item.get('score', 0) for item in twitter_data) / len(twitter_data) if twitter_data else 0
-            
+
             reddit_mentions = sum(item.get('mention', 0) for item in reddit_data)
             twitter_mentions = sum(item.get('mention', 0) for item in twitter_data)
-            
+
             overall_score = (reddit_sentiment + twitter_sentiment) / 2
-            
+
             return {
                 'reddit_sentiment': round(reddit_sentiment, 3),
                 'twitter_sentiment': round(twitter_sentiment, 3),
@@ -149,7 +149,7 @@ class FinnhubClient:
             }
 
     def get_recommendation_trends(
-        self, 
+        self,
         symbol: str
     ) -> Dict:
         """
@@ -163,7 +163,7 @@ class FinnhubClient:
         """
         try:
             recommendations = self.client.recommendation_trends(symbol)
-            
+
             if not recommendations:
                 return {
                     'strong_buy': 0,
@@ -173,7 +173,7 @@ class FinnhubClient:
                     'strong_sell': 0,
                     'period': 'N/A'
                 }
-            
+
             latest = recommendations[0]
             return {
                 'strong_buy': latest.get('strongBuy', 0),
@@ -195,7 +195,7 @@ class FinnhubClient:
             }
 
     def get_company_profile(
-        self, 
+        self,
         symbol: str
     ) -> Dict:
         """
@@ -209,7 +209,7 @@ class FinnhubClient:
         """
         try:
             profile = self.client.company_profile2(symbol=symbol)
-            
+
             return {
                 'name': profile.get('name', 'N/A'),
                 'ticker': profile.get('ticker', symbol),

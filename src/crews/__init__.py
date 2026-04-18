@@ -1,6 +1,6 @@
-from src.crews.factory import StockAnalysisCrewFactory, CrewMode
-from src.crews.sequential import SequentialStockAnalysisCrew
+from src.crews.factory import CrewMode, StockAnalysisCrewFactory
 from src.crews.group_chat import GroupChatStockAnalysisCrew
+from src.crews.sequential import SequentialStockAnalysisCrew
 
 __all__ = [
     "StockAnalysisCrewFactory",

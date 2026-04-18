@@ -4,14 +4,13 @@ from crewai.tools import tool
 
 from src.services.finnhub.finnhub_sentiment import FinnhubSentimentAnalyser
 
-
 analyser = FinnhubSentimentAnalyser()
 
 
 @tool
 def analyse_finnhub_sentiment(
-    stock_symbol: str, 
-    days_back: int = 30, 
+    stock_symbol: str,
+    days_back: int = 30,
     news_count: int = 50
 ) -> str:
     """

@@ -1,9 +1,9 @@
 from enum import Enum
 from typing import Optional
 
-from src.crews.sequential import SequentialStockAnalysisCrew
-from src.crews.group_chat import GroupChatStockAnalysisCrew
 from src.config import load_config
+from src.crews.group_chat import GroupChatStockAnalysisCrew
+from src.crews.sequential import SequentialStockAnalysisCrew
 
 
 class CrewMode(Enum):

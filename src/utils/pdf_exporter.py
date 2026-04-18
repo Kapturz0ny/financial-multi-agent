@@ -9,7 +9,6 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import (
-    PageBreak,
     Paragraph,
     SimpleDocTemplate,
     Spacer,
@@ -38,7 +37,7 @@ class PDFReportExporter:
             spaceAfter=12,
             alignment=1,
         )
-        
+
         self.metadata_style = ParagraphStyle(
             "Metadata",
             parent=self.styles["Normal"],
@@ -80,7 +79,7 @@ class PDFReportExporter:
         # Generate chart if not provided
         if fig is None:
             fig = self._generate_chart(ticker, indicators, time_period, chart_type)
-        
+
         pdf_buffer = BytesIO()
         doc = SimpleDocTemplate(
             pdf_buffer,
@@ -101,7 +100,7 @@ class PDFReportExporter:
 
         if indicators and any(indicators.values()):
             self._add_indicators_section(story, indicators)
-        
+
         self._add_chart_image(story, fig)
 
         doc.build(story)
@@ -169,7 +168,7 @@ class PDFReportExporter:
         """Add chart reference text to PDF."""
         story.append(Paragraph("<b>Interactive Chart</b>", self.styles["Heading2"]))
         story.append(Spacer(1, 0.1 * inch))
-        
+
         chart_text = (
             "<i>A detailed interactive chart with price candlesticks/lines and selected technical indicators "
             "(SMA, EMA, Bollinger Bands) can be viewed in the web application. "

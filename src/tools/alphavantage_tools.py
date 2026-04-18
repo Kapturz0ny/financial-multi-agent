@@ -4,7 +4,6 @@ from crewai.tools import tool
 
 from src.services.alphavantage.alphavantage_client import AlphaVantageClient
 
-
 client = AlphaVantageClient()
 
 
@@ -57,13 +56,13 @@ def analyse_alphavantage_sentiment(
     try:
         # Get sentiment data
         sentiment_data = client.get_news_sentiment(stock_symbol, limit=limit)
-        
+
         # Get company overview
         company_data = client.get_company_overview(stock_symbol)
-        
+
         # Get earnings data
         earnings_data = client.get_earnings(stock_symbol)
-        
+
         # Combine all data
         result = {
             'sentiment_analysis': sentiment_data,
@@ -71,9 +70,9 @@ def analyse_alphavantage_sentiment(
             'earnings': earnings_data,
             'summary': client.get_market_sentiment_summary(stock_symbol)
         }
-        
+
         return json.dumps(result, indent=2)
-        
+
     except Exception as e:
         error_response = {
             "error": str(e),
