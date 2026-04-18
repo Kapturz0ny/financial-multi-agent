@@ -14,17 +14,17 @@ def analyse_alphavantage_sentiment(
 ) -> str:
     """
     Analyzes news sentiment and provides company overview using Alpha Vantage API.
-    
+
     This tool fetches comprehensive sentiment analysis from financial news articles
     and provides detailed company information including fundamental metrics.
-    
+
     Alpha Vantage provides sentiment scores ranging from -1 (most bearish) to +1 (most bullish),
     with labels like 'Bullish', 'Somewhat-Bullish', 'Neutral', 'Somewhat-Bearish', 'Bearish'.
-    
+
     Args:
         stock_symbol (str): The stock ticker symbol to analyze (e.g., 'AAPL', 'TSLA').
         limit (int): Maximum number of news articles to analyze (default: 50, max: 1000).
-    
+
     Returns:
         str: A JSON string containing:
             - News sentiment analysis with average scores
@@ -32,7 +32,7 @@ def analyse_alphavantage_sentiment(
             - Recent news articles with individual sentiment scores
             - Company overview with fundamental metrics
             - Earnings data
-    
+
     Example:
         >>> analyse_alphavantage_sentiment("AAPL", limit=50)
         {
@@ -86,7 +86,7 @@ def analyse_alphavantage_sentiment(
 def get_company_fundamentals_alpha(stock_symbol: str) -> str:
     """
     Fetches detailed company fundamentals and overview from Alpha Vantage.
-    
+
     This tool provides comprehensive fundamental analysis data including:
     - Company description and business information
     - Key financial metrics (P/E, PEG, Dividend Yield)
@@ -94,13 +94,13 @@ def get_company_fundamentals_alpha(stock_symbol: str) -> str:
     - Valuation metrics (Market Cap, EPS, Beta)
     - 52-week price range
     - Analyst price targets
-    
+
     Args:
         stock_symbol (str): The stock ticker symbol to analyze (e.g., 'AAPL').
-    
+
     Returns:
         str: A JSON string with detailed company fundamentals.
-    
+
     Example:
         >>> get_company_fundamentals_alpha("AAPL")
         {

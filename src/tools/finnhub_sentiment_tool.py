@@ -15,20 +15,20 @@ def analyse_finnhub_sentiment(
 ) -> str:
     """
     Analyzes comprehensive market sentiment for a given stock using Finnhub API.
-    
+
     This tool combines multiple data sources to provide a holistic sentiment analysis:
     - Company news sentiment from financial news articles
     - Social media sentiment from Reddit and Twitter
     - Analyst recommendations and ratings
-    
+
     The analysis provides both quantitative metrics and qualitative insights about
     market perception of the stock.
-    
+
     Args:
         stock_symbol (str): The stock ticker symbol to analyze (e.g., 'AAPL', 'TSLA').
         days_back (int): Number of days to look back for news articles (default: 30).
         news_count (int): Maximum number of news articles to analyze (default: 50).
-    
+
     Returns:
         str: A JSON string containing comprehensive sentiment analysis including:
             - Overall sentiment score and label (Bullish/Bearish/Neutral)
@@ -36,7 +36,7 @@ def analyse_finnhub_sentiment(
             - Social media sentiment scores from Reddit and Twitter
             - Analyst recommendation distribution
             - Human-readable summary of findings
-    
+
     Example:
         >>> analyse_finnhub_sentiment("AAPL", days_back=30, news_count=50)
         {

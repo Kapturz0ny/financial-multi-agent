@@ -11,7 +11,7 @@ load_dotenv()
 class FinnhubClient:
     """
     Client for interacting with Finnhub API.
-    
+
     Provides methods to fetch company news, market sentiment, and social sentiment.
     """
 
@@ -30,11 +30,11 @@ class FinnhubClient:
     ) -> List[Dict]:
         """
         Fetch company-specific news articles.
-        
+
         Args:
             symbol: Stock ticker symbol (e.g., 'AAPL')
             days_back: Number of days to look back for news
-            
+
         Returns:
             List of news articles with headline, summary, source, datetime
         """
@@ -67,11 +67,11 @@ class FinnhubClient:
     ) -> List[Dict]:
         """
         Fetch general market news.
-        
+
         Args:
             category: News category ('general', 'forex', 'crypto', 'merger')
             min_count: Minimum number of articles to fetch
-            
+
         Returns:
             List of market news articles
         """
@@ -96,12 +96,12 @@ class FinnhubClient:
     ) -> Dict:
         """
         Get aggregated social media sentiment for a stock.
-        
+
         This includes Reddit and Twitter sentiment scores.
-        
+
         Args:
             symbol: Stock ticker symbol
-            
+
         Returns:
             Dictionary with sentiment metrics from social media
         """
@@ -154,10 +154,10 @@ class FinnhubClient:
     ) -> Dict:
         """
         Get analyst recommendation trends.
-        
+
         Args:
             symbol: Stock ticker symbol
-            
+
         Returns:
             Dictionary with buy/hold/sell recommendations
         """
@@ -200,10 +200,10 @@ class FinnhubClient:
     ) -> Dict:
         """
         Get company profile and basic information.
-        
+
         Args:
             symbol: Stock ticker symbol
-            
+
         Returns:
             Dictionary with company information
         """
@@ -230,10 +230,10 @@ class FinnhubClient:
     def _categorize_sentiment(score: float) -> str:
         """
         Categorize sentiment score into positive/neutral/negative.
-        
+
         Args:
             score: Sentiment score (typically -1 to 1)
-            
+
         Returns:
             String: 'positive', 'neutral', or 'negative'
         """

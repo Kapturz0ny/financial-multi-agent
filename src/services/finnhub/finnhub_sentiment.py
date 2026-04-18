@@ -6,7 +6,7 @@ from src.services.finnhub.finnhub_client import FinnhubClient
 class FinnhubSentimentAnalyser:
     """
     Analyzes sentiment using Finnhub API data sources.
-    
+
     Combines company news sentiment, social media sentiment (Reddit/Twitter),
     and analyst recommendations to provide comprehensive sentiment analysis.
     """
@@ -23,12 +23,12 @@ class FinnhubSentimentAnalyser:
     ) -> Dict:
         """
         Perform comprehensive sentiment analysis for a stock.
-        
+
         Args:
             symbol: Stock ticker symbol
             days_back: Number of days to look back for news
             news_count: Number of news articles to analyze
-            
+
         Returns:
             Dictionary with sentiment analysis results
         """
@@ -65,10 +65,10 @@ class FinnhubSentimentAnalyser:
     def _analyze_news_sentiment(self, news_articles: List[Dict]) -> Dict:
         """
         Analyze sentiment from news articles.
-        
+
         Args:
             news_articles: List of news article dictionaries
-            
+
         Returns:
             Dictionary with news sentiment metrics
         """
@@ -119,17 +119,17 @@ class FinnhubSentimentAnalyser:
     ) -> Dict:
         """
         Calculate overall sentiment combining all sources.
-        
+
         Weights:
         - News sentiment: 40%
         - Social sentiment: 30%
         - Analyst recommendations: 30%
-        
+
         Args:
             news_sentiment: News sentiment data
             social_sentiment: Social media sentiment data
             recommendations: Analyst recommendations data
-            
+
         Returns:
             Dictionary with overall sentiment metrics
         """
@@ -202,13 +202,13 @@ class FinnhubSentimentAnalyser:
     ) -> str:
         """
         Generate human-readable summary of sentiment analysis.
-        
+
         Args:
             news_sentiment: News sentiment data
             social_sentiment: Social media sentiment data
             recommendations: Analyst recommendations
             overall_sentiment: Overall sentiment metrics
-            
+
         Returns:
             String summary
         """

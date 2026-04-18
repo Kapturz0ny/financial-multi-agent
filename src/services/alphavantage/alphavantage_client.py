@@ -10,7 +10,7 @@ load_dotenv()
 class AlphaVantageClient:
     """
     Client for interacting with Alpha Vantage API.
-    
+
     Provides methods to fetch company overview, news sentiment, and market data.
     """
 
@@ -25,10 +25,10 @@ class AlphaVantageClient:
     def _make_request(self, params: Dict) -> Dict:
         """
         Make API request to Alpha Vantage.
-        
+
         Args:
             params: Query parameters
-            
+
         Returns:
             JSON response as dictionary
         """
@@ -40,10 +40,10 @@ class AlphaVantageClient:
     def get_company_overview(self, symbol: str) -> Dict:
         """
         Get comprehensive company overview and fundamentals.
-        
+
         Args:
             symbol: Stock ticker symbol
-            
+
         Returns:
             Dictionary with company information and financial metrics
         """
@@ -84,12 +84,12 @@ class AlphaVantageClient:
     ) -> Dict:
         """
         Get news and sentiment data from Alpha Vantage.
-        
+
         Args:
             tickers: Comma-separated stock symbols (e.g., 'AAPL,MSFT')
             topics: Optional topics filter (e.g., 'technology,finance')
             limit: Maximum number of news items
-            
+
         Returns:
             Dictionary with news articles and sentiment scores
         """
@@ -176,10 +176,10 @@ class AlphaVantageClient:
     def get_earnings(self, symbol: str) -> Dict:
         """
         Get earnings data for a company.
-        
+
         Args:
             symbol: Stock ticker symbol
-            
+
         Returns:
             Dictionary with quarterly and annual earnings
         """
@@ -220,10 +220,10 @@ class AlphaVantageClient:
     def get_market_sentiment_summary(self, symbol: str) -> str:
         """
         Get a human-readable summary of market sentiment.
-        
+
         Args:
             symbol: Stock ticker symbol
-            
+
         Returns:
             String summary of sentiment analysis
         """
