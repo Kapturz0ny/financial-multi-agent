@@ -46,7 +46,7 @@ class ChartBuilder:
         # Timezone handling
         if data.index.tzinfo is None:
             data.index = data.index.tz_localize("UTC")
-        data.index = data.index.tz_convert("US/Eastern")
+        data.index = data.index.tz_convert("America/New_York")
         data.reset_index(inplace=True)
         data.rename(columns={"Date": "Datetime"}, inplace=True)
         
