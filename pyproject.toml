@@ -18,6 +18,7 @@ dependencies = [
     "praw>=7.8.1",
     "python-dotenv>=1.0.0",
     "reportlab>=4.0.0",
+    "requests>=2.33.1",
     "ruff>=0.11.11",
     "setuptools>=80.4.0",
     "streamlit>=1.45.1",
@@ -25,6 +26,7 @@ dependencies = [
     "torch>=2.7.0",
     "torchvision>=0.25.0",
     "transformers>=4.51.3",
+    "types-requests>=2.33.0.20260408",
     "yfinance>=0.2.61",
 ]
 
