@@ -102,7 +102,7 @@ def create_trust_agent(llm: LLM) -> Agent:
 def create_leader_agent(llm: LLM) -> Agent:
     """Create Leader/Discussion Moderator agent for group chat."""
     return Agent(
-        role="Discussion Moderator & Chief Synthesizer",
+        role="Leader & Discussion Moderator",
         goal=(
             "Moderate the team discussion and build a verified consensus for {stock_symbol}. "
             "Ensure that the Senior Stock Market Researcher, Expert Technical Analyst, and Senior Fundamental Analyst "
