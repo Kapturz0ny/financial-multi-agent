@@ -67,7 +67,11 @@ def create_sceptic_agent(llm: LLM) -> Agent:
     """Create Sceptic (Devil's Advocate) agent for group chat."""
     return Agent(
         role="Devil's Advocate - Sceptic",
-        goal="Challenge assumptions, identify risks, and point out potential weaknesses in the investment thesis for {stock_symbol}",
+        goal=(
+            "Challenge assumptions and identify risks within the shared Context Storage for {stock_symbol}. "
+            "Identify weaknesses in the investment thesis, point out potential downsides, and add critical "
+            "counter-claims to the shared memory to ensure the team avoids confirmation bias."
+        ),
         backstory="You are a critical thinker who specializes in identifying hidden risks, flawed logic, and overlooked downsides. Your role is to ensure the team doesn't fall into confirmation bias.",
         llm=llm,
         tools=[],
@@ -81,7 +85,11 @@ def create_trust_agent(llm: LLM) -> Agent:
     """Create Trust/Data Verification Specialist agent for group chat."""
     return Agent(
         role="Data Verification Specialist - Trust Builder",
-        goal="Verify data accuracy, validate source credibility, and ensure all claims are well-substantiated for {stock_symbol}",
+        goal=(
+            "Verify data accuracy and validate source credibility within the shared Context Storage for {stock_symbol}. "
+            "Ensure all claims are well-substantiated, cross-check facts for consistency, and flag any "
+            "suspicious or unverified data by adding verification claims to the shared memory."
+        ),
         backstory="You are meticulous about data integrity and source verification. Your expertise ensures that conclusions are grounded in reliable, well-documented evidence and not speculation.",
         llm=llm,
         tools=[],
@@ -95,7 +103,13 @@ def create_leader_agent(llm: LLM) -> Agent:
     """Create Leader/Discussion Moderator agent for group chat."""
     return Agent(
         role="Discussion Moderator & Chief Synthesizer",
-        goal="Moderate the team discussion, synthesize all perspectives into a cohesive final report for {stock_symbol}. ALWAYS end by asking for final advice from Trust Agent and Sceptic Agent before making final recommendation. Use all available agents to provide information for example Senior Stock Market Researcher, Expert Technical Analyst, Senior Fundamental Analyst.",
+        goal=(
+            "Moderate the team discussion and build a verified consensus for {stock_symbol}. "
+            "Ensure that the Senior Stock Market Researcher, Expert Technical Analyst, and Senior Fundamental Analyst "
+            "populate the Context Storage with high-quality data. ALWAYS end by asking for final advice from the "
+            "Trust Agent and Sceptic Agent to challenge and verify the data before delegating the final report "
+            "creation to the Chief Investment Strategist (Reporter)."
+        ),
         backstory="As a senior investment strategist with 20 years of experience, you excel at extracting the strongest arguments from debate, integrating diverse perspectives, and forging consensus on a clear investment recommendation. Your approach: gather all perspectives → delegate to specialists → always consult Trust Agent for data verification → always consult Sceptic Agent for risks → synthesize into final recommendation.",
         llm=llm,
         tools=[],
