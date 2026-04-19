@@ -1,5 +1,4 @@
 import json
-import os
 import uuid
 from datetime import datetime
 from typing import Optional, Type
@@ -19,7 +18,7 @@ class ContextStorage:
         Sets a unique file path for the stock and ensures a fresh,
         empty JSON structure exists.
         """
-        self.file_path = f"context_{stock_symbol.lower()}.json"
+        self.file_path = f"./context/ctx_{stock_symbol.lower()}.json"
         initial_data = {"facts": [], "claims": []}
         self._save_to_file(initial_data)
         return f"Context storage initialized at {self.file_path}"
