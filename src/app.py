@@ -132,7 +132,7 @@ with st.sidebar.expander("Select Indicators", expanded=True):
 
 sidebar_col1, sidebar_col2 = st.sidebar.columns(spec=[0.4, 0.6], gap="small")
 
-if sidebar_col1.button("Update", type="primary", use_container_width=True):
+if sidebar_col1.button("Update", type="primary", width='stretch'):
     with st.spinner("Loading stock data…"):
         try:
             data = load_stock_data(ticker, next(filter(lambda x: x["period"] == time_period, INTERVAL_MAPPING)))
@@ -161,7 +161,7 @@ if sidebar_col1.button("Update", type="primary", use_container_width=True):
             st.error("Unable to load stock data. Please check the ticker symbol and your internet connection.")
             st.exception(e)
 
-if sidebar_col2.button("Generate report", type="primary", use_container_width=True):
+if sidebar_col2.button("Generate report", type="primary", width='stretch'):
     with st.spinner("Running multi-agent analysis…"):
         try:
             crew = StockAnalysisCrewFactory.create(crew_mode, llm_provider)
@@ -196,7 +196,7 @@ if st.session_state.stock_metrics is not None:
     col3.metric("Volume", f"{volume:,}")
 
 if st.session_state.stock_fig is not None:
-    st.plotly_chart(st.session_state.stock_fig, use_container_width=True, key="chart_display")
+    st.plotly_chart(st.session_state.stock_fig, width='stretch', key="chart_display")
 
 if st.session_state.report is not None:
     st.header("Investment Report")
@@ -247,12 +247,12 @@ if st.session_state.report is not None:
         # Button to view context storage (only visible if data exists)
         show_context = False
         if st.session_state.report_context:
-            show_context = st.button("🔍 View Context Storage", type="secondary", use_container_width=True)
+            show_context = st.button("🔍 View Context Storage", type="secondary", width='stretch')
         else:
-            st.button("🔍 Context Unavailable", type="secondary", use_container_width=True, disabled=True, help="Context storage is only available in Group Chat mode.")
+            st.button("🔍 Context Unavailable", type="secondary", width='stretch', disabled=True, help="Context storage is only available in Group Chat mode.")
 
     with col_eval:
-        if st.button("📊 Evaluate Report Quality", type="secondary", use_container_width=True):
+        if st.button("📊 Evaluate Report Quality", type="secondary", width='stretch'):
             with st.spinner("Evaluating report quality..."):
                 evaluator = ReportEvaluator()
                 st.session_state.evaluation_results = evaluator.evaluate(
@@ -341,7 +341,7 @@ if st.session_state.report is not None:
             height=400
         )
 
-        st.plotly_chart(fig_radar, use_container_width=True)
+        st.plotly_chart(fig_radar, width='stretch')
 
         # Detailed metrics in expandable sections
         with st.expander("📋 Detailed Metrics", expanded=False):
