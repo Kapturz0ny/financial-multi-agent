@@ -337,7 +337,7 @@ class ReportEvaluator:
             'buy_mentions': actions_found['buy'],
             'sell_mentions': actions_found['sell'],
             'hold_mentions': actions_found['hold'],
-            'primary_action': max(actions_found, key=actions_found.get) if any(actions_found.values()) else 'None',
+            'primary_action': max(actions_found, key=actions_found.__getitem__) if any(actions_found.values()) else 'None',
             'has_price_target': len(price_targets) > 0,
             'price_targets_count': len(price_targets),
             'has_time_horizon': len(time_horizons) > 0,
@@ -368,7 +368,7 @@ class ReportEvaluator:
 
         total = positive_count + negative_count
         if total == 0:
-            sentiment_balance = 0
+            sentiment_balance = 0.0
             sentiment_label = 'Neutral'
         else:
             sentiment_balance = (positive_count - negative_count) / total

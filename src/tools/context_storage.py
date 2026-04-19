@@ -19,7 +19,7 @@ class ContextStorage:
         empty JSON structure exists.
         """
         self.file_path = f"./context/ctx_{stock_symbol.lower()}.json"
-        initial_data = {"facts": [], "claims": []}
+        initial_data: dict[str, list] = {"facts": [], "claims": []}
         self._save_to_file(initial_data)
         return f"Context storage initialized at {self.file_path}"
 

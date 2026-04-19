@@ -1,5 +1,5 @@
 import os
-from typing import Dict
+from typing import Dict, Optional
 
 import requests
 from dotenv import load_dotenv
@@ -79,7 +79,7 @@ class AlphaVantageClient:
     def get_news_sentiment(
         self,
         tickers: str,
-        topics: str = None,
+        topics: Optional[str] = None,
         limit: int = 50
     ) -> Dict:
         """

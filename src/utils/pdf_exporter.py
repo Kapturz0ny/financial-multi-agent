@@ -9,6 +9,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import (
+    Flowable,
     Paragraph,
     SimpleDocTemplate,
     Spacer,
@@ -88,7 +89,7 @@ class PDFReportExporter:
             leftMargin=0.5 * inch,
         )
 
-        story = []
+        story: list[Flowable] = []
 
         self._add_title_section(story, ticker)
         self._add_metadata_section(story, mode, provider, execution_time)
@@ -107,12 +108,12 @@ class PDFReportExporter:
         pdf_buffer.seek(0)
         return pdf_buffer
 
-    def _add_title_section(self, story: list, ticker: str):
+    def _add_title_section(self, story: list[Flowable], ticker: str):
         """Add title section to PDF."""
         story.append(Paragraph(f"Stock Analysis Report: {ticker.upper()}", self.title_style))
         story.append(Spacer(1, 0.2 * inch))
 
-    def _add_metadata_section(self, story: list, mode: str, provider: str, execution_time: float):
+    def _add_metadata_section(self, story: list[Flowable], mode: str, provider: str, execution_time: float):
         """Add metadata section with generation info."""
         metadata_text = (
             f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | "
@@ -123,7 +124,7 @@ class PDFReportExporter:
         story.append(Paragraph(metadata_text, self.metadata_style))
         story.append(Spacer(1, 0.15 * inch))
 
-    def _add_metrics_table(self, story: list, metrics: dict):
+    def _add_metrics_table(self, story: list[Flowable], metrics: dict):
         """Add stock metrics table to PDF."""
         metrics_data = [
             ["Metric", "Value"],
@@ -152,7 +153,7 @@ class PDFReportExporter:
         story.append(metrics_table)
         story.append(Spacer(1, 0.2 * inch))
 
-    def _add_indicators_section(self, story: list, indicators: dict):
+    def _add_indicators_section(self, story: list[Flowable], indicators: dict):
         """Add technical indicators section."""
         selected = [k for k, v in indicators.items() if v]
         indicators_text = f"<b>Technical Indicators:</b> {', '.join(selected)}"
@@ -164,7 +165,7 @@ class PDFReportExporter:
         return ChartBuilder.create_chart(ticker, indicators, time_period, chart_type)
 
 
-    def _add_chart_image(self, story: list, fig: go.Figure):
+    def _add_chart_image(self, story: list[Flowable], fig: go.Figure):
         """Add chart reference text to PDF."""
         story.append(Paragraph("<b>Interactive Chart</b>", self.styles["Heading2"]))
         story.append(Spacer(1, 0.1 * inch))
@@ -177,7 +178,7 @@ class PDFReportExporter:
         story.append(Paragraph(chart_text, self.styles["Normal"]))
         story.append(Spacer(1, 0.2 * inch))
 
-    def _add_report_content(self, story: list, report_text: str):
+    def _add_report_content(self, story: list[Flowable], report_text: str):
         """Add report content section."""
         story.append(Paragraph("Investment Analysis Report", self.styles["Heading1"]))
         story.append(Spacer(1, 0.15 * inch))
