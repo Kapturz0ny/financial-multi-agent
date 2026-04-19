@@ -7,12 +7,14 @@ from src.config import LLMConfig
 from src.crews.agents_definitions import (
     create_fundamental_analyst_agent,
     create_leader_agent,
+    create_reporter_agent,
     create_researcher_agent,
     create_sceptic_agent,
     create_technical_analyst_agent,
     create_trust_agent,
 )
 from src.crews.tasks_definitions import TaskType, create_task
+from src.tools.context_storage import ContextStorage, create_context_storage_tools
 
 
 class GroupChatStockAnalysisCrew:
@@ -25,6 +27,8 @@ class GroupChatStockAnalysisCrew:
             api_key=self.config.api_key,
             temperature=self.config.temperature,
         )
+        self.context_storage = ContextStorage()
+        self.storage_tools = create_context_storage_tools(self.context_storage)
         self._initialize_agents()
 
     def _initialize_agents(self):
@@ -34,10 +38,26 @@ class GroupChatStockAnalysisCrew:
         self.technical_analyst = create_technical_analyst_agent(self.llm)
         self.fundamental_analyst = create_fundamental_analyst_agent(self.llm)
 
-        # New 3 agents for debate and synthesis
+        # Agents for debate
         self.sceptic = create_sceptic_agent(self.llm)
         self.trust_agent = create_trust_agent(self.llm)
+
+        # Reporter/Strategist agent with access to context storage for final synthesis
+        self.reporter = create_reporter_agent(self.llm)
+
+        # Leader agent to orchestrate the process
         self.leader = create_leader_agent(self.llm)
+
+        context_storage_agents = [
+            self.researcher,
+            self.technical_analyst,
+            self.fundamental_analyst,
+            self.sceptic,
+            self.trust_agent,
+            self.reporter,
+        ]
+        for agent in context_storage_agents:
+            agent.tools.extend(self.storage_tools)
 
     def run(self, stock_symbol: str) -> dict:
         """
@@ -51,17 +71,18 @@ class GroupChatStockAnalysisCrew:
         """
         start_time = time()
 
-        research_task = create_task(TaskType.RESEARCH, self.researcher)
-        technical_task = create_task(TaskType.TECHNICAL_ANALYSIS, self.technical_analyst)
-        fundamental_task = create_task(TaskType.FUNDAMENTAL_ANALYSIS, self.fundamental_analyst)
+        self.context_storage.initialize_session(stock_symbol)
+
+        research_task = create_task(TaskType.CS_RESEARCH, self.researcher)
+        technical_task = create_task(TaskType.CS_TECHNICAL, self.technical_analyst)
+        fundamental_task = create_task(TaskType.CS_FUNDAMENTAL, self.fundamental_analyst)
+
         sceptic_task = create_task(TaskType.SCEPTIC, self.sceptic)
         trust_task = create_task(TaskType.TRUST, self.trust_agent)
 
-        synthesis_task = create_task(
-            TaskType.SYNTHESIS,
-            self.leader,
-            context=[research_task, technical_task, fundamental_task, sceptic_task, trust_task],
-        )
+        reporting_task = create_task(TaskType.CS_REPORTING, self.reporter)
+
+        # synthesis_task = create_task(TaskType.SYNTHESIS, self.leader)
 
         crew = Crew(
             agents=[
@@ -69,6 +90,7 @@ class GroupChatStockAnalysisCrew:
                 self.technical_analyst,
                 self.fundamental_analyst,
                 self.sceptic,
+                self.reporter,
                 self.trust_agent,
             ],
             tasks=[
@@ -77,13 +99,13 @@ class GroupChatStockAnalysisCrew:
                 fundamental_task,
                 sceptic_task,
                 trust_task,
-                synthesis_task,
+                # synthesis_task,
+                reporting_task,
             ],
             manager_agent=self.leader,
             process=Process.hierarchical,
             verbose=True,
             cache=True,
-
         )
 
         try:
@@ -95,6 +117,7 @@ class GroupChatStockAnalysisCrew:
                 "provider": self.config.provider.value,
                 "execution_time": execution_time,
                 "report": str(result),
+                "context_data": self.context_storage.storage,
             }
         except Exception as e:
             execution_time = time() - start_time
