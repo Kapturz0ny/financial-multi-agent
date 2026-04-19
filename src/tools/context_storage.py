@@ -1,10 +1,25 @@
 import json
 import uuid
-from datetime import datetime
 from typing import Optional, Type
 
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
+
+
+class FactEntry(BaseModel):
+    content: str = Field(
+        ...,
+        description="The hard fact or numerical data",
+        examples=["Revenue grew by 15% YoY."],
+    )
+
+
+class ClaimEntry(BaseModel):
+    content: str = Field(
+        ...,
+        description="Your conclusion, interpretation, or counter-argument",
+        examples=["High P/E ratio suggests overvaluation."]
+    )
 
 
 class ContextStorage:
@@ -18,7 +33,7 @@ class ContextStorage:
         Sets a unique file path for the stock and ensures a fresh,
         empty JSON structure exists.
         """
-        self.file_path = f"./context/ctx_{stock_symbol.lower()}.json"
+        self.file_path = f".context/ctx_{stock_symbol.lower()}.json"
         initial_data: dict[str, list] = {"facts": [], "claims": []}
         self._save_to_file(initial_data)
         return f"Context storage initialized at {self.file_path}"
@@ -36,32 +51,44 @@ class ContextStorage:
         with open(self.file_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
-    def add_fact(self, agent_name: str, content: str) -> str:
+    def add_facts(self, agent_name: str, facts: list[FactEntry]) -> str:
         data = self._load_from_file()
-        fact_id = f"fact_{uuid.uuid4().hex[:8]}"
-        fact = {
-            "id": fact_id,
-            "agent": agent_name,
-            "content": content,
-            "timestamp": datetime.now().isoformat(),
-        }
-        data["facts"].append(fact)
-        self._save_to_file(data)
-        return f"Success: Fact {fact_id} added to storage file."
+        added_ids = []
+        for f in facts:
+            if isinstance(f, dict):
+                content = f.get('content')
+            else:
+                content = getattr(f, 'content', None)
 
-    def add_claim(self, agent_name: str, content: str, refutes_id: Optional[str] = None) -> str:
-        data = self._load_from_file()
-        claim_id = f"claim_{uuid.uuid4().hex[:8]}"
-        claim = {
-            "id": claim_id,
-            "agent": agent_name,
-            "content": content,
-            "refutes_id": refutes_id,
-            "timestamp": datetime.now().isoformat(),
-        }
-        data["claims"].append(claim)
+            fact_id = f"fact_{uuid.uuid4().hex[:8]}"
+            data["facts"].append({
+                "id": fact_id,
+                "agent": agent_name,
+                "content": content,
+            })
+            added_ids.append(fact_id)
         self._save_to_file(data)
-        return f"Success: Claim {claim_id} added to storage file."
+        return f"Success: Added {len(added_ids)} facts: {', '.join(added_ids)}"
+
+    def add_claims(self, agent_name: str, claims: list[ClaimEntry], refutes_id: Optional[str] = None) -> str:
+        data = self._load_from_file()
+        added_ids = []
+        for c in claims:
+            if isinstance(c, dict):
+                content = c.get('content')
+            else:
+                content = getattr(c, 'content', None)
+            claim_id = f"claim_{uuid.uuid4().hex[:8]}"
+            data["claims"].append({
+                "id": claim_id,
+                "agent": agent_name,
+                "content": content,
+                "refutes_id": refutes_id,
+            })
+            added_ids.append(claim_id)
+
+        self._save_to_file(data)
+        return f"Success: Added {len(added_ids)} claims: {', '.join(added_ids)}"
 
     def get_context(self) -> str:
         """Returns the entire storage as a formatted JSON string."""
@@ -76,13 +103,15 @@ class ContextStorage:
 
 # --- TOOLS FOR CREWAI ---
 
+
 class AddFactInput(BaseModel):
     agent_name: str = Field(..., description="Your role name (e.g., 'Senior Stock Market Researcher')")
-    content: str = Field(..., description="The hard fact or numerical data you found")
+    facts: list[FactEntry] = Field(..., description="List of facts to add at once")
+
 
 class AddClaimInput(BaseModel):
     agent_name: str = Field(..., description="Your role name (e.g., 'Devil's Advocate - Sceptic')")
-    content: str = Field(..., description="Your conclusion, interpretation, or counter-argument")
+    claims: list[ClaimEntry] = Field(..., description="List of claims to add at once")
     refutes_id: Optional[str] = Field(None, description="ID of a fact or claim you are refuting (optional)")
 
 
@@ -99,19 +128,25 @@ def create_context_storage_tools(storage_instance: ContextStorage):
     class AddFactTool(BaseTool):
         name: str = "Add Fact to Context"
         description: str = (
-            "Saves a hard fact or numerical data to the shared JSON file. Use this instead of writing long reports."
+            "Saves a list of hard facts to the shared JSON file. "
+            "Input MUST be a list of objects where each object has a 'content' key. "
+            "Example: facts=[{'content': 'Fact 1'}, {'content': 'Fact 2'}]"
         )
         args_schema: Type[BaseModel] = AddFactInput
 
-        def _run(self, agent_name: str, content: str) -> str:
-            return storage_instance.add_fact(agent_name, content)
+        def _run(self, agent_name: str, facts: list[FactEntry]) -> str:
+            return storage_instance.add_facts(agent_name, facts)
 
     class AddClaimTool(BaseTool):
         name: str = "Add Claim to Context"
-        description: str = "Saves your interpretation or objection to the shared JSON file. Use refutes_id if you disagree with an existing entry."
+        description: str = (
+            "Saves a list of interpretations or objections. "
+            "Input MUST be a list of objects where each object has a 'content' key. "
+            "Example: claims=[{'content': 'Claim 1'}, {'content': 'Claim 2'}]"
+        )
         args_schema: Type[BaseModel] = AddClaimInput
 
-        def _run(self, agent_name: str, content: str, refutes_id: Optional[str] = None) -> str:
-            return storage_instance.add_claim(agent_name, content, refutes_id)
+        def _run(self, agent_name: str, claims: list[ClaimEntry], refutes_id: Optional[str] = None) -> str:
+            return storage_instance.add_claims(agent_name, claims, refutes_id)
 
     return [ReadContextTool(), AddFactTool(), AddClaimTool()]
