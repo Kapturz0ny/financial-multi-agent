@@ -80,6 +80,8 @@ if "selected_indicators" not in st.session_state:
     st.session_state.selected_indicators = {}
 if "evaluation_results" not in st.session_state:
     st.session_state.evaluation_results = None
+if "report_context" not in st.session_state:
+    st.session_state.report_context = None
 
 st.set_page_config("Stock Investment Report", layout="wide")
 st.title("📈 Stock Investment Analysis Platform")
@@ -171,6 +173,7 @@ if sidebar_col2.button("Generate report", type="primary", use_container_width=Tr
             st.session_state.report_mode = result["mode"]
             st.session_state.report_provider = result["provider"]
             st.session_state.execution_time = result["execution_time"]
+            st.session_state.report_context = result.get("context_data")
         except ValueError as e:
             st.error(f"Configuration Error: {str(e)}\n\nPlease ensure API keys are set in your .env file.")
 
@@ -229,7 +232,7 @@ if st.session_state.report is not None:
         execution_time=st.session_state.execution_time
     )
 
-    col_pdf, col_eval = st.columns(2)
+    col_pdf, col_ctx, col_eval = st.columns(3)
 
     with col_pdf:
         st.download_button(
@@ -239,6 +242,14 @@ if st.session_state.report is not None:
             mime="application/pdf",
             key="download_pdf_btn"
         )
+
+    with col_ctx:
+        # Button to view context storage (only visible if data exists)
+        show_context = False
+        if st.session_state.report_context:
+            show_context = st.button("🔍 View Context Storage", type="secondary", use_container_width=True)
+        else:
+            st.button("🔍 Context Unavailable", type="secondary", use_container_width=True, disabled=True, help="Context storage is only available in Group Chat mode.")
 
     with col_eval:
         if st.button("📊 Evaluate Report Quality", type="secondary", use_container_width=True):
