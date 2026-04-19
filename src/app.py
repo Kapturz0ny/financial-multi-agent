@@ -99,8 +99,16 @@ llm_provider = st.sidebar.selectbox(
 
 crew_mode = st.sidebar.radio(
     "Analysis Mode",
-    options=[CrewMode.SEQUENTIAL.value, CrewMode.GROUP_CHAT.value],
-    format_func=lambda x: "Sequential" if x == CrewMode.SEQUENTIAL.value else "Group Chat",
+    options=[
+        CrewMode.SEQUENTIAL.value,
+        CrewMode.PARALLEL.value,
+        CrewMode.GROUP_CHAT.value
+    ],
+    format_func=lambda x: {
+        CrewMode.SEQUENTIAL.value: "Sequential",
+        CrewMode.PARALLEL.value: "Parallel",
+        CrewMode.GROUP_CHAT.value: "Group Chat"
+    }.get(x, str(x)),
     horizontal=True
 )
 
@@ -193,7 +201,12 @@ if st.session_state.report is not None:
     # Display metadata
     col1, col2, col3 = st.columns(3)
     with col1:
-        mode_label = "Sequential (Original)" if st.session_state.report_mode == CrewMode.SEQUENTIAL.value else "Group Chat (FinDebate)"
+        mode_labels = {
+            CrewMode.SEQUENTIAL.value: "Sequential (Original)",
+            CrewMode.PARALLEL.value: "Parallel",
+            CrewMode.GROUP_CHAT.value: "Group Chat (FinDebate)"
+        }
+        mode_label = mode_labels.get(st.session_state.report_mode, st.session_state.report_mode)
         st.metric("Analysis Mode", mode_label)
     with col2:
         provider_label = "Gemini" if st.session_state.report_provider == "gemini" else "OpenAI"

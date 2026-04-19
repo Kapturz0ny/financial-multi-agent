@@ -3,6 +3,7 @@ from typing import Optional
 
 from src.config import load_config
 from src.crews.group_chat import GroupChatStockAnalysisCrew
+from src.crews.parallel import ParallelStockAnalysisCrew
 from src.crews.sequential import SequentialStockAnalysisCrew
 
 
@@ -11,6 +12,7 @@ class CrewMode(Enum):
 
     SEQUENTIAL = "sequential"
     GROUP_CHAT = "group_chat"
+    PARALLEL = "parallel"
 
 
 class StockAnalysisCrewFactory:
@@ -22,11 +24,11 @@ class StockAnalysisCrewFactory:
         Create a crew instance based on mode.
 
         Args:
-            mode: "sequential" or "group_chat"
-            provider: "gemini" or "openai". If None, uses LLM_PROVIDER from env.
+            mode: CrewMode option
+            provider: If None, uses LLM_PROVIDER from env.
 
         Returns:
-            Instance of SequentialStockAnalysisCrew or GroupChatStockAnalysisCrew
+            Instance of selected crew class
 
         Raises:
             ValueError: If mode is not recognized or provider is invalid
@@ -37,5 +39,7 @@ class StockAnalysisCrewFactory:
             return SequentialStockAnalysisCrew(config)
         elif mode.lower() == CrewMode.GROUP_CHAT.value:
             return GroupChatStockAnalysisCrew(config)
+        elif mode.lower() == CrewMode.PARALLEL.value:
+            return ParallelStockAnalysisCrew(config)
         else:
             raise ValueError(f"Unknown crew mode: {mode}. Use 'sequential' or 'group_chat'.")

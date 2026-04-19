@@ -21,7 +21,7 @@ class GroupChatStockAnalysisCrew:
     def __init__(self, config: LLMConfig):
         self.config = config
         self.llm = LLM(
-            model=self.config.model_group_chat,
+            model=self.config.advanced_model,
             api_key=self.config.api_key,
             temperature=self.config.temperature,
         )

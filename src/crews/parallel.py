@@ -12,8 +12,8 @@ from src.crews.agents_definitions import (
 from src.crews.tasks_definitions import TaskType, create_task
 
 
-class SequentialStockAnalysisCrew:
-    """Sequential execution mode - agents work in linear order with dependencies."""
+class ParallelStockAnalysisCrew:
+    """Parallel execution mode - specialists work concurrently, reporter synthesizes at the end."""
 
     def __init__(self, config: LLMConfig):
         self.config = config
@@ -25,16 +25,24 @@ class SequentialStockAnalysisCrew:
         self._initialize_agents_and_tasks()
 
     def _initialize_agents_and_tasks(self):
-        """Initialize all agents and tasks for sequential mode."""
+        """Initialize all agents and tasks for parallel mode."""
         researcher = create_researcher_agent(self.llm)
         technical_analyst = create_technical_analyst_agent(self.llm)
         fundamental_analyst = create_fundamental_analyst_agent(self.llm)
         reporter = create_reporter_agent(self.llm)
 
-        research_task = create_task(TaskType.RESEARCH, researcher)
-        technical_analysis_task = create_task(TaskType.TECHNICAL_ANALYSIS, technical_analyst, context=[research_task])
-        fundamental_analysis_task = create_task(TaskType.FUNDAMENTAL_ANALYSIS, fundamental_analyst, context=[research_task])
-        reporting_task = create_task(TaskType.REPORTING, reporter, context=[research_task, technical_analysis_task, fundamental_analysis_task])
+        # Specialists work parallel async_execution=True
+        research_task = create_task(TaskType.RESEARCH, researcher, async_execution=True)
+        technical_analysis_task = create_task(TaskType.TECHNICAL_ANALYSIS, technical_analyst, async_execution=True)
+        fundamental_analysis_task = create_task(TaskType.FUNDAMENTAL_ANALYSIS, fundamental_analyst, async_execution=True)
+
+        # Reporter works synchronously after specialists finish, async_execution=False
+        reporting_task = create_task(
+            TaskType.REPORTING,
+            reporter,
+            context=[research_task, technical_analysis_task, fundamental_analysis_task],
+            async_execution=False
+        )
 
         self.crew = Crew(
             agents=[researcher, technical_analyst, fundamental_analyst, reporter],
@@ -45,7 +53,7 @@ class SequentialStockAnalysisCrew:
 
     def run(self, stock_symbol: str) -> dict:
         """
-        Run sequential crew and return report with metadata.
+        Run parallel crew and return report with metadata.
 
         Args:
             stock_symbol: Stock ticker symbol
@@ -58,7 +66,7 @@ class SequentialStockAnalysisCrew:
         execution_time = time() - start_time
 
         return {
-            "mode": "sequential",
+            "mode": "parallel",
             "provider": self.config.provider.value,
             "execution_time": execution_time,
             "report": str(result),

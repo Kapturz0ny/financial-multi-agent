@@ -139,6 +139,7 @@ def create_task(
     task_type: TaskType,
     agent: Agent,
     context: Optional[list] = None,
+    async_execution: bool = False,
 ) -> Task:
     """
     Factory function to create tasks based on type.
@@ -165,6 +166,7 @@ def create_task(
         "description": config["description"],
         "expected_output": config["expected_output"],
         "agent": agent,
+        "async_execution": async_execution,
     }
 
     # Add context if provided
