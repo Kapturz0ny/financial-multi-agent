@@ -241,7 +241,7 @@ TASK_CONFIGS = {
 def create_task(
     task_type: TaskType,
     agent: Agent,
-    context: Optional[list] = None,
+    context: Optional[list[Task]] = None,
     async_execution: bool = False,
 ) -> Task:
     """
@@ -265,15 +265,10 @@ def create_task(
     if not config:
         raise ValueError(f"No configuration found for task type: {task_type}")
 
-    task_kwargs = {
-        "description": config["description"],
-        "expected_output": config["expected_output"],
-        "agent": agent,
-        "async_execution": async_execution,
-    }
-
-    # Add context if provided
-    if context is not None:
-        task_kwargs["context"] = context
-
-    return Task(**task_kwargs)
+    return Task(
+        description=config["description"],
+        expected_output=config["expected_output"],
+        agent=agent,
+        async_execution=async_execution,
+        context=context if context else []
+    )

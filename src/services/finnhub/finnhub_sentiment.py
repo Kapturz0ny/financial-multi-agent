@@ -97,7 +97,7 @@ class FinnhubSentimentAnalyser:
             sentiment_counts['positive'] - sentiment_counts['negative']
         ) / total if total > 0 else 0
 
-        dominant = max(sentiment_counts, key=sentiment_counts.get)
+        dominant = max(sentiment_counts, key=sentiment_counts.__getitem__)
 
         return {
             'positive_count': sentiment_counts['positive'],
