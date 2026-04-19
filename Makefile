@@ -50,6 +50,12 @@ run:
 	uv run streamlit run src/app.py
 
 
+## Clear context storage dir
+.PHONY: clear_ctx
+clear_ctx:
+	rm .context/*.json
+
+
 #################################################################################
 # Self Documenting Commands                                                     #
 #################################################################################
