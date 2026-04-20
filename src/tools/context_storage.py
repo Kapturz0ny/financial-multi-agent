@@ -20,6 +20,7 @@ class ClaimEntry(BaseModel):
         description="Your conclusion, interpretation, or counter-argument",
         examples=["High P/E ratio suggests overvaluation."]
     )
+    refutes_id: Optional[str] = Field(None, description="ID of the entry you are challenging.")
 
 
 class ContextStorage:
@@ -70,30 +71,29 @@ class ContextStorage:
         self._save_to_file(data)
         return f"Success: Added {len(added_ids)} facts: {', '.join(added_ids)}"
 
-    def add_claims(self, agent_name: str, claims: list[ClaimEntry], refutes_id: Optional[str] = None) -> str:
+    def add_claims(self, agent_name: str, claims: list[ClaimEntry]) -> str:
         data = self._load_from_file()
         added_ids = []
         for c in claims:
-            if isinstance(c, dict):
-                content = c.get('content')
-            else:
-                content = getattr(c, 'content', None)
+            content = c.get('content') if isinstance(c, dict) else getattr(c, 'content', None)
+            r_id = c.get('refutes_id') if isinstance(c, dict) else getattr(c, 'refutes_id', None)
+            
             claim_id = f"claim_{uuid.uuid4().hex[:8]}"
             data["claims"].append({
                 "id": claim_id,
                 "agent": agent_name,
                 "content": content,
-                "refutes_id": refutes_id,
+                "refutes_id": r_id,
             })
             added_ids.append(claim_id)
 
         self._save_to_file(data)
-        return f"Success: Added {len(added_ids)} claims: {', '.join(added_ids)}"
+        return f"Success: Added {len(added_ids)} claims."
 
     def get_context(self) -> str:
         """Returns the entire storage as a formatted JSON string."""
         data = self._load_from_file()
-        return json.dumps(data, indent=2, ensure_ascii=False)
+        return json.dumps(data, separators=(',', ':'))
 
     @property
     def storage(self):
@@ -112,7 +112,6 @@ class AddFactInput(BaseModel):
 class AddClaimInput(BaseModel):
     agent_name: str = Field(..., description="Your role name (e.g., 'Devil's Advocate - Sceptic')")
     claims: list[ClaimEntry] = Field(..., description="List of claims to add at once")
-    refutes_id: Optional[str] = Field(None, description="ID of a fact or claim you are refuting (optional)")
 
 
 def create_context_storage_tools(storage_instance: ContextStorage):
@@ -146,7 +145,7 @@ def create_context_storage_tools(storage_instance: ContextStorage):
         )
         args_schema: Type[BaseModel] = AddClaimInput
 
-        def _run(self, agent_name: str, claims: list[ClaimEntry], refutes_id: Optional[str] = None) -> str:
-            return storage_instance.add_claims(agent_name, claims, refutes_id)
+        def _run(self, agent_name: str, claims: list[ClaimEntry]) -> str:
+            return storage_instance.add_claims(agent_name, claims)
 
     return [ReadContextTool(), AddFactTool(), AddClaimTool()]
