@@ -110,126 +110,90 @@ TASK_CONFIGS = {
     },
     TaskType.SCEPTIC: {
         "description": (
-            "Play devil's advocate for '{stock_symbol}' investment thesis. "
-            "Identify risks, weaknesses, potential downsides, and challenges to the bullish case. "
-            "Challenge assumptions made by other analysts. Be critical and thorough. "
-            "CRITICAL: Gather ALL your findings first, then use the 'Add Claim to Context' tool "
-            "ONCE or TWICE to save them in batches. Do not call the tool for every single news item."
-            "Example: add_claim_to_context(agent_name='...', claims=[{'content': 'Claim A'}, {'content': 'Claim B'}])"
-            "1. Use 'Read Current Context' to review all facts and claims submitted by the analysts.\n"
-            "2. Critically analyze their assumptions. Look for flawed logic, ignored macroeconomic risks, or overly optimistic projections.\n"
-            "3. Use 'Add Claim to Context' to record your objections. If you are directly challenging a specific claim made by another analyst, you MUST include its ID in the 'refutes_id' field.\n"
-            "4. Use 'Add Claim to Context' to add alternative bearish scenarios or overlooked risks as new claims."
-            "DO NOT summarize or list the claims in your final answer. "
-            "The data is already safe in the Context Storage. Reporting it here will cause a system crash."
+            "Act as devil's advocate for '{stock_symbol}'. "
+            "1. FIRST, 'Read Current Context' to identify IDs of claims/facts to challenge.\n"
+            "2. Use 'Add Claim to Context' with `agent_name` 'Devil's Advocate - Sceptic'.\n"
+            "3. CRITICAL: Put the challenged ID INSIDE the claim object in the `refutes_id` field. "
+            "Example: claims=[{{'content': 'Growth is too high', 'refutes_id': 'claim_123'}}, {{'content': 'Debt risk', 'refutes_id': 'fact_456'}}].\n"
+            "Limit to MAX 3 claims. DO NOT put IDs in the content text."
         ),
-        "expected_output": (
-            "SUCCESS: Critical analysis completed and saved to Context Storage."
-        ),
+        "expected_output": "SUCCESS: Critical analysis completed and saved to Context Storage.",
     },
     TaskType.TRUST: {
         "description": (
-            "Verify data credibility and validate claims about '{stock_symbol}'. "
-            "Cross-check information across sentiment, technical, and fundamental analyses. "
-            "Confirm source reliability and data accuracy. "
-            "CRITICAL: Gather ALL your findings first, then use the 'Add Claim to Context' tool "
-            "ONCE or TWICE to save them in batches. Do not call the tool for every single news item."
-            "Example: add_claim_to_context(agent_name='...', claims=[{'content': 'Claim A'}, {'content': 'Claim B'}])"
-            "1. Use 'Read Current Context' to review all entries in the database.\n"
-            "2. Cross-check facts across the different analyses for consistency.\n"
-            "3. Use 'Add Claim to Context' to validate strong, well-supported claims, or to flag suspicious, contradictory, or unverified data.\n"
-            "4. If a fact or claim is demonstrably inaccurate or lacks reliability, use 'Add Claim to Context' with the 'refutes_id' pointing to that specific entry."
-            "DO NOT summarize or list the claims in your final answer. "
-            "The data is already safe in the Context Storage. Reporting it here will cause a system crash."
+            "Verify data for '{stock_symbol}'. "
+            "1. FIRST, 'Read Current Context' to find IDs to verify.\n"
+            "2. Use 'Add Claim to Context' with `agent_name` 'Data Verification Specialist - Trust Builder'.\n"
+            "3. CRITICAL: If an entry is suspicious, you MUST use the `refutes_id` field INSIDE the claim object to link it. "
+            "Example: claims=[{{'content': 'Data unverified', 'refutes_id': 'fact_789'}}].\n"
+            "Limit to MAX 3 claims. DO NOT put IDs in the content text."
         ),
-        "expected_output": (
-            "SUCCESS: Data verification completed and saved to Context Storage."
-        ),
+        "expected_output": "SUCCESS: Data verification completed and saved to Context Storage.",
     },
     TaskType.SYNTHESIS: {
         "description": (
-            "You are the investment committee moderator. Your goal is to orchestrate the multi-agent analytical process for '{stock_symbol}'. "
-            "1. Direct the Researcher, Technical Analyst, and Fundamental Analyst to populate the Context Storage with their specialized findings. "
-            "2. Once the initial data is gathered, ensure the Sceptic challenges the assumptions and the Trust agent verifies the data integrity within the shared memory. "
-            "3. Facilitate the discussion by ensuring all agents have contributed their facts and claims. "
-            "4. Your task is complete when you have ensured that a full cycle of analysis, critique, and verification has been documented in the Context Storage by the respective specialists, providing a solid foundation for the final report."
+            "Orchestrate the '{stock_symbol}' analysis process: "
+            "1. Direct Researcher, Technical, and Fundamental analysts to populate Context Storage. "
+            "2. Once done, direct Sceptic to challenge assumptions and Trust to verify data integrity. "
+            "3. Ensure all agents contributed. Task is complete when this full cycle (analysis -> critique -> verification) is documented in storage."
         ),
-        "expected_output": "A summary of the orchestration process and confirmation that all analytical perspectives (Research, Technical, Fundamental, Sceptic, Trust) have been documented in the Context Storage.",
+        "expected_output": "Orchestration complete. All data verified in Context Storage.",
     },
-    TaskType.CS_RESEARCH: {
+TaskType.CS_RESEARCH: {
         "description": (
-            "Gather and analyze qualitative data and public sentiment for '{stock_symbol}' by utilizing your specialized tools: "
-            "1. Analyze broad market and social sentiment using **analyse_finnhub_sentiment** and **analyse_alphavantage_sentiment**. "
-            "2. Fetch and process the most recent and impactful news articles using **fetch_yahoo_news**. "
-            "3. Retrieve professional financial analyses, analyst ratings, and earnings consensus using **fetch_yahoo_analysis**. "
-            "Focus on identifying the *drivers* of sentiment and the *impact* of news on the stock's outlook. "
-            "CRITICAL: Gather ALL your findings first, then use the 'Add Fact to Context' tool "
-            "ONCE or TWICE to save them in batches. Do not call the tool for every single news item."
-            "Example: add_fact_to_context(agent_name='...', facts=[{'content': 'Fact A'}, {'content': 'Fact B'}])"
-            "Use 'Add Fact to Context' to save hard data (e.g., specific news headlines, sentiment scores, exact analyst ratings). "
-            "Use 'Add Claim to Context' to save your interpretations and syntheses of the gathered information."
-            "DO NOT summarize or list the facts or claims in your final answer. "
-            "The data is already safe in the Context Storage. Reporting it here will cause a system crash."
+            "Analyze sentiment for '{stock_symbol}'. "
+            "Tools: `analyse_finnhub_sentiment`, `analyse_alphavantage_sentiment`, `fetch_yahoo_news`, `fetch_yahoo_analysis`. "
+            "CRITICAL: Batch results. Use 'Add Fact to Context' for data and 'Add Claim to Context' for insights. "
+            "Set `agent_name` to 'Senior Stock Market Researcher'. "
+            "MAX 5 facts, 3 claims. Ultra-concise style. DO NOT summarize in final answer."
         ),
-        "expected_output": (
-            "SUCCESS: Sentiment and research data gathered and saved to Context Storage."
-        ),
+        "expected_output": "SUCCESS: Sentiment and research data gathered and saved to Context Storage.",
     },
     TaskType.CS_TECHNICAL: {
         "description": (
-            "Perform an in-depth technical analysis of '{stock_symbol}' by fetching "
-            "historical market data and calculating a wide array of technical indicators "
-            "(using analyse_technical_indicators). Your primary goal is to **interpret these indicators** "
-            "to identify trends, patterns, support/resistance levels, and potential trading signals, "
-            "explaining their significance. "
-            "CRITICAL: Gather ALL your findings first, then use the 'Add Fact to Context' tool "
-            "ONCE or TWICE to save them in batches. Do not call the tool for every single new item."
-            "Example: add_fact_to_context(agent_name='...', facts=[{'content': 'Fact A'}, {'content': 'Fact B'}])"
-            "Use 'Add Fact to Context' to save specific numerical values (e.g., current price, exact support/resistance levels, specific indicator readings like 'RSI is 75'). "
-            "Use 'Add Claim to Context' to save your interpretations of what these numbers mean."
-            "DO NOT summarize or list the facts or claims in your final answer. "
-            "The data is already safe in the Context Storage. Reporting it here will cause a system crash."
+            "Technical analysis for '{stock_symbol}' using `analyse_technical_indicators`. "
+            "Interpret trends and signals. Batch results. "
+            "Set `agent_name` to 'Expert Technical Analyst'. "
+            "MAX 5 facts, 3 claims. Ultra-concise style. DO NOT summarize in final answer."
         ),
-        "expected_output": (
-            "SUCCESS: Technical analysis completed and saved to Context Storage."
-        ),
+        "expected_output": "SUCCESS: Technical analysis completed and saved to Context Storage.",
     },
     TaskType.CS_FUNDAMENTAL: {
         "description": (
-            "Conduct a comprehensive fundamental analysis of '{stock_symbol}' by fetching "
-            "and analyzing its financial statements (income, balance sheet, cash flow), "
-            "earnings reports, and company overview from Yahoo Finance (using analyse_fundamentals). "
-            "Your focus is to **interpret this data** to assess its financial health, profitability, "
-            "growth prospects, valuation, and overall intrinsic value, highlighting key strengths and weaknesses. "
-            "CRITICAL: Gather ALL your findings first, then use the 'Add Fact to Context' tool "
-            "ONCE or TWICE to save them in batches. Do not call the tool for every single new item."
-            "Example: add_fact_to_context(agent_name='...', facts=[{'content': 'Fact A'}, {'content': 'Fact B'}])"
-            "Use 'Add Fact to Context' to save hard financial metrics (e.g., specific P/E, P/S, Debt-to-Equity, ROE, profit margins, revenue figures). "
-            "Use 'Add Claim to Context' to save your analytical conclusions."
-            "DO NOT summarize or list the facts or claims in your final answer. "
-            "The data is already safe in the Context Storage. Reporting it here will cause a system crash."
+            "Fundamental analysis for '{stock_symbol}' using `analyse_fundamentals`. "
+            "Assess health and valuation. Batch results. "
+            "Set `agent_name` to 'Senior Fundamental Analyst'. "
+            "MAX 5 facts, 3 claims. Ultra-concise style. DO NOT summarize in final answer."
         ),
-        "expected_output": (
-            "SUCCESS: Fundamental analysis completed and saved to Context Storage."
-        ),
+        "expected_output": "SUCCESS: Fundamental analysis completed and saved to Context Storage.",
     },
     TaskType.CS_REPORTING: {
         "description": (
-            "Synthesize the sentiment analysis, technical analysis, and fundamental analysis for '{stock_symbol}' by reading the ENTIRE history of facts, claims, and refutations from the Context Storage. "
-            "Your goal is to formulate a cohesive, insightful, and definitive investment report. **Do not simply concatenate previous entries.** "
-            "Instead, integrate these diverse insights, critically evaluate them, highlight the most crucial findings and any convergences or divergences (especially those flagged by the Sceptic and Trust agents), discuss potential risks and rewards, and provide a clear, actionable investment thesis. "
-            "Maintain a highly professional, academic, and sophisticated analytical tone. Use complex sentence structures and advanced financial terminology. "
-            "Embed hard quantitative data throughout the text (exact numbers, percentages, dollar amounts, and dates) and explicitly cite sources based on the context."
+            "Synthesize all data for '{stock_symbol}' from Context Storage into a definitive investment report. "
+            "CRITICAL RULES:\n"
+            "1. DO NOT include raw IDs (like 'fact_123' or 'claim_456') inside the report narrative. Use them only internally to resolve conflicts.\n"
+            "2. Cite sources by their professional names (e.g., 'Yahoo Finance', 'Analyst Consensus', 'Technical Indicators') instead of JSON IDs.\n"
+            "3. Actively resolve conflicts: if a Sceptic refuted a claim (via refutes_id), you must explain why you chose one side or how you balanced the risk.\n"
+            "4. Ensure the report is a professional narrative, not a list of data points."
         ),
         "expected_output": (
-            "A comprehensive and well-structured textual investment report for '{stock_symbol}' formatted with clear Markdown headers (##). This report **must**:\n"
-            "1.  Begin with a concise **Executive Summary** that states the overall investment thesis (Buy, Sell, Hold), a specific **Price Target**, a clear **Time Horizon**, and the key reasons supporting it.\n"
-            "2.  **Synthesize and critically evaluate** key findings from the sentiment analysis. Highlight how public perception and news flow might impact the stock, going beyond just stating the sentiment.\n"
-            "3.  **Synthesize and critically evaluate** key findings from the technical analysis. Explain how the technical outlook (indicators, patterns, support/resistance) aligns or contrasts with other analyses.\n"
-            "4.  **Synthesize and critically evaluate** key findings from the fundamental analysis. Discuss the core financial health, valuation ratios, and growth prospects in the context of the overall thesis.\n"
-            "5.  **Identify and discuss convergences or divergences** between the sentiment, technical, and fundamental analyses. Address how conflicts or refutations in the Context Storage were resolved.\n"
-            "6.  Clearly outline the **primary catalysts** and a dedicated **Risk Assessment** section (incorporating the Sceptic's findings).\n"
-            "7.  Conclude with a **well-reasoned investment outlook and a specific recommendation**, reiterating the main supporting points. The recommendation should be actionable and professional."
+            "A professional Markdown (##) report for '{stock_symbol}' containing EXACTLY these sections:\n\n"
+            "## 1. Executive Summary\n"
+            "Thesis (Buy/Sell/Hold), Price Target, Time Horizon, and top 3 reasons.\n\n"
+            "## 2. Market Sentiment & News Landscape\n"
+            "- **Sentiment Drivers**: What is currently moving the stock's social/market perception.\n"
+            "- **Impactful News**: Summary of the most recent critical news articles and their implications.\n"
+            "- **Analyst Consensus**: Detailed view of ratings, earnings estimates, and price targets.\n\n"
+            "## 3. Technical Analysis\n"
+            "Detailed interpretation of trends, specific indicator alignments (RSI, MACD, SMA), and key support/resistance levels.\n\n"
+            "## 4. Fundamental Analysis\n"
+            "Assessment of financial health (margins, ROE, debt), valuation ratios (P/E, PEG), and growth prospects.\n\n"
+            "## 5. Convergences & Divergences\n"
+            "Explicit resolution of conflicts. Address where technicals and fundamentals disagree and how Sceptic/Trust flags were handled.\n\n"
+            "## 6. Risk Assessment & Catalysts\n"
+            "Detailed risks identified by the Sceptic and primary upcoming drivers (catalysts).\n\n"
+            "## 7. Final Recommendation\n"
+            "Actionable, well-reasoned conclusion with a professional investment outlook."
         ),
     },
 }
