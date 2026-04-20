@@ -232,7 +232,7 @@ if st.session_state.report is not None:
         execution_time=st.session_state.execution_time
     )
 
-    col_pdf, col_ctx, col_eval = st.columns(3)
+    col_pdf, col_eval = st.columns(2)
 
     with col_pdf:
         st.download_button(
@@ -242,14 +242,6 @@ if st.session_state.report is not None:
             mime="application/pdf",
             key="download_pdf_btn"
         )
-
-    with col_ctx:
-        # Button to view context storage (only visible if data exists)
-        show_context = False
-        if st.session_state.report_context:
-            show_context = st.button("🔍 View Context Storage", type="secondary", width='stretch')
-        else:
-            st.button("🔍 Context Unavailable", type="secondary", width='stretch', disabled=True, help="Context storage is only available in Group Chat mode.")
 
     with col_eval:
         if st.button("📊 Evaluate Report Quality", type="secondary", width='stretch'):
@@ -261,6 +253,35 @@ if st.session_state.report is not None:
                 )
 
     st.divider()
+
+    # Display context storage if available
+    if st.session_state.report_context:
+        with st.expander("📦 View Context Storage (Blackboard Data)", expanded=False):
+            st.info("This shared memory contains the structured facts and claims used by agents during the debate.")
+            
+            ctx_data = st.session_state.report_context
+            tab_facts, tab_claims, tab_json = st.tabs(["📌 Facts", "💡 Claims", "📄 Raw JSON"])
+            
+            with tab_facts:
+                if ctx_data.get("facts"):
+                    df_facts = pd.DataFrame(ctx_data["facts"])
+                    cols = ['id', 'agent', 'content']
+                    st.dataframe(df_facts[cols], width='stretch', hide_index=True)
+                else:
+                    st.write("No facts recorded in this session.")
+                    
+            with tab_claims:
+                if ctx_data.get("claims"):
+                    df_claims = pd.DataFrame(ctx_data["claims"])
+                    cols = ['id', 'agent', 'content']
+                    if 'refutes_id' in df_claims.columns:
+                        cols.append('refutes_id')
+                    st.dataframe(df_claims[cols], width='stretch', hide_index=True)
+                else:
+                    st.write("No claims recorded in this session.")
+                    
+            with tab_json:
+                st.json(ctx_data)
 
     # Display evaluation results if available
     if st.session_state.evaluation_results is not None:
