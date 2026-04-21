@@ -11,6 +11,20 @@ services:
       - ./src:/app/src
     networks:
       - analytics-network
+    depends_on:
+      - qdrant
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant-db
+    ports:
+      - "6333:6333" # HTTP & Dashboard
+      - "6334:6334" # gRPC
+    volumes:
+      - ./qdrant_storage:/qdrant/storage:z
+    networks:
+      - analytics-network
     restart: unless-stopped
 
 
