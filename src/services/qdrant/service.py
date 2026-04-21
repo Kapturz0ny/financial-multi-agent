@@ -70,3 +70,29 @@ class QdrantService:
             }
             for res in results
         ]
+    
+    def get_all_evidence(self) -> list:
+        """Retrieve all stored evidence from the current session's vector database."""
+        if not self.collection_name:
+            return []
+        
+        try:
+            records, _ = self.client.scroll(
+                collection_name=self.collection_name,
+                limit=100,
+                with_payload=True,
+                with_vectors=False
+            )
+            
+            evidence_list = []
+            for record in records:
+                payload = record.payload or {}
+                evidence_list.append({
+                    "context_id": payload.get("context_id", "Unknown"),
+                    "source": payload.get("source", "Unknown"),
+                    "content": payload.get("document", "")
+                })
+            return evidence_list
+        except Exception as e:
+            print(f"Error fetching evidence: {e}")
+            return []

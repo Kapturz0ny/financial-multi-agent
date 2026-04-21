@@ -10,6 +10,7 @@ from src.crews import CrewMode, StockAnalysisCrewFactory
 from src.utils.chart_builder import ChartBuilder
 from src.utils.pdf_exporter import PDFReportExporter
 from src.utils.report_evaluator import ReportEvaluator
+from src.tools.qdrant_tools import qdrant_service
 
 INTERVAL_MAPPING = [
     {"period": "1d", "interval": "1m"},
@@ -82,6 +83,8 @@ if "evaluation_results" not in st.session_state:
     st.session_state.evaluation_results = None
 if "report_context" not in st.session_state:
     st.session_state.report_context = None
+if "report_evidence" not in st.session_state:
+    st.session_state.report_evidence = None
 
 st.set_page_config("Stock Investment Report", layout="wide")
 st.title("📈 Stock Investment Analysis Platform")
@@ -174,6 +177,11 @@ if sidebar_col2.button("Generate report", type="primary", width='stretch'):
             st.session_state.report_provider = result["provider"]
             st.session_state.execution_time = result["execution_time"]
             st.session_state.report_context = result.get("context_data")
+
+            if crew_mode == CrewMode.GROUP_CHAT.value:
+                st.session_state.report_evidence = qdrant_service.get_all_evidence()
+            else:
+                st.session_state.report_evidence = None
         except ValueError as e:
             st.error(f"Configuration Error: {str(e)}\n\nPlease ensure API keys are set in your .env file.")
 
@@ -260,7 +268,7 @@ if st.session_state.report is not None:
             st.info("This shared memory contains the structured facts and claims used by agents during the debate.")
             
             ctx_data = st.session_state.report_context
-            tab_facts, tab_claims, tab_json = st.tabs(["📌 Facts", "💡 Claims", "📄 Raw JSON"])
+            tab_facts, tab_claims, tab_evidence, tab_json = st.tabs(["📌 Facts", "💡 Claims", "📚 Raw Evidence (Qdrant)", "📄 Raw JSON"])
             
             with tab_facts:
                 if ctx_data.get("facts"):
@@ -279,6 +287,13 @@ if st.session_state.report is not None:
                     st.dataframe(df_claims[cols], width='stretch', hide_index=True)
                 else:
                     st.write("No claims recorded in this session.")
+            
+            with tab_evidence:
+                if st.session_state.get("report_evidence"):
+                    df_evidence = pd.DataFrame(st.session_state.report_evidence)
+                    st.dataframe(df_evidence, width='stretch', hide_index=True)
+                else:
+                    st.write("No raw evidence recorded in the vector database for this session.")
                     
             with tab_json:
                 st.json(ctx_data)
