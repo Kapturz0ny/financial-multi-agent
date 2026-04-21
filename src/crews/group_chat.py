@@ -14,7 +14,12 @@ from src.crews.agents_definitions import (
     create_trust_agent,
 )
 from src.crews.tasks_definitions import TaskType, create_task
-from src.tools.context_storage import ContextStorage, create_context_storage_tools
+from src.tools.context_storage_tools import (
+    context_storage,
+    read_current_context,
+    add_fact_to_context,
+    add_claim_to_context
+)
 from src.tools.qdrant_tools import (
     store_session_evidence, 
     query_session_evidence, 
@@ -32,8 +37,6 @@ class GroupChatStockAnalysisCrew:
             api_key=self.config.api_key,
             temperature=self.config.temperature,
         )
-        self.context_storage = ContextStorage()
-        self.storage_tools = create_context_storage_tools(self.context_storage)
         self._initialize_agents()
 
     def _initialize_agents(self):
@@ -53,6 +56,17 @@ class GroupChatStockAnalysisCrew:
         # Leader agent to orchestrate the process
         self.leader = create_leader_agent(self.llm)
 
+        def add_tools_to_agent(agent, tools_to_add):
+            if agent.tools is None:
+                agent.tools = []
+            
+            if isinstance(tools_to_add, list):
+                agent.tools.extend(tools_to_add)
+            else:
+                agent.tools.append(tools_to_add)
+
+        ctx_tools = [read_current_context, add_fact_to_context, add_claim_to_context]
+        
         context_storage_agents = [
             self.researcher,
             self.technical_analyst,
@@ -61,19 +75,8 @@ class GroupChatStockAnalysisCrew:
             self.trust_agent,
             self.reporter,
         ]
-
-        def add_tools_to_agent(agent, tools_to_add):
-            if agent.tools is None:
-                agent.tools = []
-            
-            # Jeśli tools_to_add to lista, używamy extend, jeśli pojedyncze narzędzie, używamy append
-            if isinstance(tools_to_add, list):
-                agent.tools.extend(tools_to_add)
-            else:
-                agent.tools.append(tools_to_add)
-
         for agent in context_storage_agents:
-            add_tools_to_agent(agent, self.storage_tools)
+            add_tools_to_agent(agent, ctx_tools)
 
         add_tools_to_agent(self.researcher, store_session_evidence)
         add_tools_to_agent(self.technical_analyst, store_session_evidence)
@@ -95,7 +98,7 @@ class GroupChatStockAnalysisCrew:
         """
         start_time = time()
 
-        self.context_storage.initialize_session(stock_symbol)
+        context_storage.initialize_session(stock_symbol)
         qdrant_service.initialize_session(stock_symbol)
 
         research_task = create_task(TaskType.CS_RESEARCH, self.researcher)
@@ -142,7 +145,7 @@ class GroupChatStockAnalysisCrew:
                 "provider": self.config.provider.value,
                 "execution_time": execution_time,
                 "report": str(result),
-                "context_data": self.context_storage.storage,
+                "context_data": context_storage.storage,
             }
         except Exception as e:
             execution_time = time() - start_time
