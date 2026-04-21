@@ -112,9 +112,11 @@ TASK_CONFIGS = {
         "description": (
             "Act as devil's advocate for '{stock_symbol}'. "
             "1. FIRST, 'Read Current Context' to identify IDs of claims/facts to challenge.\n"
-            "2. Use 'Add Claim to Context' with `agent_name` 'Devil's Advocate - Sceptic'.\n"
-            "3. CRITICAL: Put the challenged ID INSIDE the claim object in the `refutes_id` field. "
-            "Example: claims=[{{'content': 'Growth is too high', 'refutes_id': 'claim_123'}}, {{'content': 'Debt risk', 'refutes_id': 'fact_456'}}].\n"
+            "2. Use `query_session_evidence` to search the vector database for the raw source texts to scrutinize.\n"
+            "3. Identify risks, flawed logic, or overly optimistic projections.\n"
+            "4. Use 'Add Claim to Context' with `agent_name` 'Devil's Advocate - Sceptic'.\n"
+            "5. CRITICAL: Put the challenged ID INSIDE the claim object in the `refutes_id` field. "
+            "Example: claims=[{{'content': 'Growth is too high', 'refutes_id': 'claim_123'}}].\n"
             "Limit to MAX 3 claims. DO NOT put IDs in the content text."
         ),
         "expected_output": "SUCCESS: Critical analysis completed and saved to Context Storage.",
@@ -123,8 +125,9 @@ TASK_CONFIGS = {
         "description": (
             "Verify data for '{stock_symbol}'. "
             "1. FIRST, 'Read Current Context' to find IDs to verify.\n"
-            "2. Use 'Add Claim to Context' with `agent_name` 'Data Verification Specialist - Trust Builder'.\n"
-            "3. CRITICAL: If an entry is suspicious, you MUST use the `refutes_id` field INSIDE the claim object to link it. "
+            "2. Use `query_session_evidence` to pull the raw source text from the vector database and cross-check it against the stored facts.\n"
+            "3. Use 'Add Claim to Context' with `agent_name` 'Data Verification Specialist - Trust Builder'.\n"
+            "4. CRITICAL: If an entry is suspicious or unverified, you MUST use the `refutes_id` field INSIDE the claim object to link it. "
             "Example: claims=[{{'content': 'Data unverified', 'refutes_id': 'fact_789'}}].\n"
             "Limit to MAX 3 claims. DO NOT put IDs in the content text."
         ),
@@ -139,12 +142,13 @@ TASK_CONFIGS = {
         ),
         "expected_output": "Orchestration complete. All data verified in Context Storage.",
     },
-TaskType.CS_RESEARCH: {
+    TaskType.CS_RESEARCH: {
         "description": (
             "Analyze sentiment for '{stock_symbol}'. "
             "Tools: `analyse_finnhub_sentiment`, `analyse_alphavantage_sentiment`, `fetch_yahoo_news`, `fetch_yahoo_analysis`. "
             "CRITICAL: Batch results. Use 'Add Fact to Context' for data and 'Add Claim to Context' for insights. "
             "Set `agent_name` to 'Senior Stock Market Researcher'. "
+            "AFTER saving to Context Storage, extract the generated IDs from the success message and use `store_session_evidence` to save the raw article texts/data as proof for each ID. "
             "MAX 5 facts, 3 claims. Ultra-concise style. DO NOT summarize in final answer."
         ),
         "expected_output": "SUCCESS: Sentiment and research data gathered and saved to Context Storage.",
@@ -154,6 +158,7 @@ TaskType.CS_RESEARCH: {
             "Technical analysis for '{stock_symbol}' using `analyse_technical_indicators`. "
             "Interpret trends and signals. Batch results. "
             "Set `agent_name` to 'Expert Technical Analyst'. "
+            "AFTER saving to Context Storage, extract the generated IDs from the success message and use `store_session_evidence` to save the raw indicator data as proof for each ID. "
             "MAX 5 facts, 3 claims. Ultra-concise style. DO NOT summarize in final answer."
         ),
         "expected_output": "SUCCESS: Technical analysis completed and saved to Context Storage.",
@@ -163,6 +168,7 @@ TaskType.CS_RESEARCH: {
             "Fundamental analysis for '{stock_symbol}' using `analyse_fundamentals`. "
             "Assess health and valuation. Batch results. "
             "Set `agent_name` to 'Senior Fundamental Analyst'. "
+            "AFTER saving to Context Storage, extract the generated IDs from the success message and use `store_session_evidence` to save the raw financial statements/data as proof for each ID. "
             "MAX 5 facts, 3 claims. Ultra-concise style. DO NOT summarize in final answer."
         ),
         "expected_output": "SUCCESS: Fundamental analysis completed and saved to Context Storage.",
@@ -174,7 +180,8 @@ TaskType.CS_RESEARCH: {
             "1. DO NOT include raw IDs (like 'fact_123' or 'claim_456') inside the report narrative. Use them only internally to resolve conflicts.\n"
             "2. Cite sources by their professional names (e.g., 'Yahoo Finance', 'Analyst Consensus', 'Technical Indicators') instead of JSON IDs.\n"
             "3. Actively resolve conflicts: if a Sceptic refuted a claim (via refutes_id), you must explain why you chose one side or how you balanced the risk.\n"
-            "4. Ensure the report is a professional narrative, not a list of data points."
+            "4. Use `query_session_evidence` to retrieve raw source texts from the vector database if you need deeper context to resolve conflicts or write the narrative.\n"
+            "5. Ensure the report is a professional narrative, not a list of data points."
         ),
         "expected_output": (
             "A professional Markdown (##) report for '{stock_symbol}' containing EXACTLY these sections:\n\n"

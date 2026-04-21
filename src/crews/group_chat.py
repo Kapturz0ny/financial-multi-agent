@@ -15,6 +15,11 @@ from src.crews.agents_definitions import (
 )
 from src.crews.tasks_definitions import TaskType, create_task
 from src.tools.context_storage import ContextStorage, create_context_storage_tools
+from src.tools.qdrant_tools import (
+    store_session_evidence, 
+    query_session_evidence, 
+    qdrant_service
+)
 
 
 class GroupChatStockAnalysisCrew:
@@ -59,6 +64,14 @@ class GroupChatStockAnalysisCrew:
         for agent in context_storage_agents:
             agent.tools.extend(self.storage_tools)
 
+        self.researcher.tools.append(store_session_evidence)
+        self.technical_analyst.tools.append(store_session_evidence)
+        self.fundamental_analyst.tools.append(store_session_evidence)
+
+        self.sceptic.tools.append(query_session_evidence)
+        self.trust_agent.tools.append(query_session_evidence)
+        self.reporter.tools.append(query_session_evidence)
+
     def run(self, stock_symbol: str) -> dict:
         """
         Run group chat mode with hierarchical process - leader orchestrates 6 specialist agents.
@@ -72,6 +85,7 @@ class GroupChatStockAnalysisCrew:
         start_time = time()
 
         self.context_storage.initialize_session(stock_symbol)
+        qdrant_service.initialize_session(stock_symbol)
 
         research_task = create_task(TaskType.CS_RESEARCH, self.researcher)
         technical_task = create_task(TaskType.CS_TECHNICAL, self.technical_analyst)
