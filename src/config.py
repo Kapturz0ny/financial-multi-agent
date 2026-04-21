@@ -60,6 +60,18 @@ class LLMConfig:
             self.temperature = 0.5
 
 
+class QdrantConfig:
+    """Configuration for Qdrant Vector Database."""
+
+    def __init__(self):
+        # Default to 'qdrant' because that's the service name in docker-compose
+        self.host = os.getenv("QDRANT_HOST", "qdrant")
+        self.port = int(os.getenv("QDRANT_PORT", 6333))
+        self.grpc_port = int(os.getenv("QDRANT_GRPC_PORT", 6334))
+        # Use gRPC by default for better performance with embeddings
+        self.prefer_grpc = os.getenv("QDRANT_PREFER_GRPC", "true").lower() == "true"
+
+
 def get_default_provider() -> str:
     """Get default provider from environment or fallback to gemini."""
     return os.getenv("LLM_PROVIDER", "gemini")
@@ -78,3 +90,8 @@ def load_config(provider: Optional[str] = None) -> LLMConfig:
     if provider is None:
         provider = get_default_provider()
     return LLMConfig(provider)
+
+
+def get_qdrant_config() -> QdrantConfig:
+    """Get Qdrant configuration instance."""
+    return QdrantConfig()
