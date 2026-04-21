@@ -61,16 +61,27 @@ class GroupChatStockAnalysisCrew:
             self.trust_agent,
             self.reporter,
         ]
+
+        def add_tools_to_agent(agent, tools_to_add):
+            if agent.tools is None:
+                agent.tools = []
+            
+            # Jeśli tools_to_add to lista, używamy extend, jeśli pojedyncze narzędzie, używamy append
+            if isinstance(tools_to_add, list):
+                agent.tools.extend(tools_to_add)
+            else:
+                agent.tools.append(tools_to_add)
+
         for agent in context_storage_agents:
-            agent.tools.extend(self.storage_tools)
+            add_tools_to_agent(agent, self.storage_tools)
 
-        self.researcher.tools.append(store_session_evidence)
-        self.technical_analyst.tools.append(store_session_evidence)
-        self.fundamental_analyst.tools.append(store_session_evidence)
+        add_tools_to_agent(self.researcher, store_session_evidence)
+        add_tools_to_agent(self.technical_analyst, store_session_evidence)
+        add_tools_to_agent(self.fundamental_analyst, store_session_evidence)
 
-        self.sceptic.tools.append(query_session_evidence)
-        self.trust_agent.tools.append(query_session_evidence)
-        self.reporter.tools.append(query_session_evidence)
+        add_tools_to_agent(self.sceptic, query_session_evidence)
+        add_tools_to_agent(self.trust_agent, query_session_evidence)
+        add_tools_to_agent(self.reporter, query_session_evidence)
 
     def run(self, stock_symbol: str) -> dict:
         """
