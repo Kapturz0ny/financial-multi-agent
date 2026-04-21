@@ -53,11 +53,11 @@ class LLMConfig:
         if self.provider == LLMProvider.GEMINI:
             self.base_model = "gemini/gemini-2.0-flash-lite"
             self.advanced_model = "gemini/gemini-2.0-flash"
-            self.temperature = 0.5
+            self.temperature = 0.2
         elif self.provider == LLMProvider.OPENAI:
             self.base_model = "gpt-4.1"
             self.advanced_model = "gpt-4.1"
-            self.temperature = 0.5
+            self.temperature = 0.2
 
 
 class QdrantConfig:
