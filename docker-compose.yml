@@ -1,0 +1,19 @@
+services:
+  app:
+    build: .
+    container_name: stock-analysis-app
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    volumes:
+      - ./.context:/app/.context
+      - ./src:/app/src
+    networks:
+      - analytics-network
+    restart: unless-stopped
+
+
+networks:
+  analytics-network:
+    driver: bridge

@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Project specific
+.context/*.json
+screenshots/
+documentation.pdf
+*.egg-info/
+.git/
+.env
