@@ -147,28 +147,29 @@ TASK_CONFIGS = {
     },
     TaskType.CS_SCEPTIC: {
         "description": (
-            "Act as devil's advocate for '{stock_symbol}'. "
-            "1. FIRST, 'Read Current Context' to identify IDs of claims/facts to challenge.\n"
-            "2. Use `query_session_evidence` to search the vector database for the raw source texts to scrutinize.\n"
-            "3. Identify risks, flawed logic, or overly optimistic projections.\n"
+            "Act as devil's advocate for '{stock_symbol}' in an ongoing, multi-round debate. "
+            "1. FIRST, 'Read Current Context' to review the latest entries, paying special attention to recent claims made by the Trust Builder or Analysts.\n"
+            "2. Use `query_session_evidence` to search the vector database for raw source texts to scrutinize.\n"
+            "3. Formulate highly targeted counter-arguments to the specific claims you just read.\n"
             "4. Use 'Add Claim to Context' with `agent_name` 'Devil's Advocate - Sceptic'.\n"
-            "5. CRITICAL: Put the challenged ID INSIDE the claim object in the `refutes_id` field. "
-            "Example: claims=[{{'content': 'Growth is too high', 'refutes_id': 'claim_123'}}].\n"
-            "Limit to MAX 3 claims. DO NOT put IDs in the content text."
+            "5. CRITICAL: You MUST link your counter-argument to the specific entry you are attacking by putting its ID in the `refutes_id` field. "
+            "Example: claims=[{{'content': 'Trust agent is wrong, debt is actually short-term', 'refutes_id': 'claim_123'}}].\n"
+            "Limit to MAX 1 or 2 claims per turn to allow for a dynamic back-and-forth debate. DO NOT put IDs in the content text."
         ),
-        "expected_output": "SUCCESS: Critical analysis completed and saved to Context Storage.",
+        "expected_output": "SUCCESS: Sceptic debate turn completed and saved to Context Storage.",
     },
     TaskType.CS_TRUST: {
         "description": (
-            "Verify data for '{stock_symbol}'. "
-            "1. FIRST, 'Read Current Context' to find IDs to verify.\n"
-            "2. Use `query_session_evidence` to pull the raw source text from the vector database and cross-check it against the stored facts.\n"
-            "3. Use 'Add Claim to Context' with `agent_name` 'Data Verification Specialist - Trust Builder'.\n"
-            "4. CRITICAL: If an entry is suspicious or unverified, you MUST use the `refutes_id` field INSIDE the claim object to link it. "
-            "Example: claims=[{{'content': 'Data unverified', 'refutes_id': 'fact_789'}}].\n"
-            "Limit to MAX 3 claims. DO NOT put IDs in the content text."
+            "Verify data for '{stock_symbol}' in an ongoing, multi-round debate. "
+            "1. FIRST, 'Read Current Context' to find the latest entries, especially the recent attacks made by the Sceptic.\n"
+            "2. Use `query_session_evidence` to pull raw source text to cross-check the Sceptic's claims or the original facts.\n"
+            "3. Formulate verifications or corrections based on the evidence.\n"
+            "4. Use 'Add Claim to Context' with `agent_name` 'Data Verification Specialist - Trust Builder'.\n"
+            "5. CRITICAL: You MUST link your verification/correction to the specific entry you are addressing using the `refutes_id` field INSIDE the claim object. "
+            "Example: claims=[{{'content': 'Sceptic concern is invalid; Q3 report shows high liquidity', 'refutes_id': 'claim_456'}}].\n"
+            "Limit to MAX 1 or 2 claims per turn to allow for a dynamic back-and-forth debate. DO NOT put IDs in the content text."
         ),
-        "expected_output": "SUCCESS: Data verification completed and saved to Context Storage.",
+        "expected_output": "SUCCESS: Trust debate turn completed and saved to Context Storage.",
     },
     TaskType.CS_SYNTHESIS: {
         "description": (
