@@ -1,5 +1,6 @@
 from crewai.tools import tool
-from src.services.context_storage.service import ContextStorage, FactEntry, ClaimEntry
+
+from src.services.context_storage.service import ClaimEntry, ContextStorage, FactEntry
 
 # Global instance to be initialized in the Crew's run method
 context_storage = ContextStorage()
@@ -17,10 +18,10 @@ def read_current_context() -> str:
 @tool
 def add_fact_to_context(agent_name: str, facts: list[FactEntry]) -> str:
     """
-    Saves a list of hard facts to the shared JSON file. 
-    Input MUST be a list of objects where each object has a 'content' key. 
+    Saves a list of hard facts to the shared JSON file.
+    Input MUST be a list of objects where each object has a 'content' key.
     Example: facts=[{'content': 'Fact 1'}, {'content': 'Fact 2'}]
-    
+
     Args:
         agent_name (str): Your exact role name (e.g., 'Senior Stock Market Researcher').
         facts (list[FactEntry]): List of facts to add at once.
@@ -31,10 +32,10 @@ def add_fact_to_context(agent_name: str, facts: list[FactEntry]) -> str:
 @tool
 def add_claim_to_context(agent_name: str, claims: list[ClaimEntry]) -> str:
     """
-    Saves a list of interpretations or objections to the shared JSON file. 
-    Input MUST be a list of objects where each object has a 'content' key. 
+    Saves a list of interpretations or objections to the shared JSON file.
+    Input MUST be a list of objects where each object has a 'content' key.
     Example: claims=[{'content': 'Claim 1'}, {'content': 'Claim 2', 'refutes_id': 'fact_123'}]
-    
+
     Args:
         agent_name (str): Your exact role name (e.g., 'Devil's Advocate - Sceptic').
         claims (list[ClaimEntry]): List of claims to add at once.

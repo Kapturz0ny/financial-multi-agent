@@ -1,18 +1,18 @@
 from time import time
 
-from crewai import Crew, LLM
+from crewai import LLM, Crew
 from crewai.process import Process
 
-from src.crews.agents_definitions import (
-    create_researcher_agent,
-    create_technical_analyst_agent,
-    create_fundamental_analyst_agent,
-    create_sceptic_agent_v0,
-    create_trust_agent_v0,
-    create_leader_agent_v0,
-)
-from src.crews.tasks_definitions import create_task, TaskType
 from src.config import LLMConfig
+from src.crews.agents_definitions import (
+    create_fundamental_analyst_agent,
+    create_leader_agent_v0,
+    create_researcher_agent,
+    create_sceptic_agent_v0,
+    create_technical_analyst_agent,
+    create_trust_agent_v0,
+)
+from src.crews.tasks_definitions import TaskType, create_task
 
 
 class GroupChatV0StockAnalysisCrew:
@@ -56,7 +56,7 @@ class GroupChatV0StockAnalysisCrew:
         fundamental_task = create_task(TaskType.FUNDAMENTAL_ANALYSIS, self.fundamental_analyst)
         sceptic_task = create_task(TaskType.SCEPTIC, self.sceptic)
         trust_task = create_task(TaskType.TRUST, self.trust_agent)
-        
+
         synthesis_task = create_task(
             TaskType.SYNTHESIS,
             self.leader,
@@ -83,7 +83,7 @@ class GroupChatV0StockAnalysisCrew:
             process=Process.hierarchical,
             verbose=True,
             cache=True,
-            
+
         )
 
         try:

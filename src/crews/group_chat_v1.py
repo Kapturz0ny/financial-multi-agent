@@ -15,16 +15,12 @@ from src.crews.agents_definitions import (
 )
 from src.crews.tasks_definitions import TaskType, create_task
 from src.tools.context_storage_tools import (
+    add_claim_to_context,
+    add_fact_to_context,
     context_storage,
     read_current_context,
-    add_fact_to_context,
-    add_claim_to_context
 )
-from src.tools.qdrant_tools import (
-    store_session_evidence, 
-    query_session_evidence, 
-    qdrant_service
-)
+from src.tools.qdrant_tools import qdrant_service, query_session_evidence, store_session_evidence
 
 
 class GroupChatV1StockAnalysisCrew:
@@ -59,14 +55,14 @@ class GroupChatV1StockAnalysisCrew:
         def add_tools_to_agent(agent, tools_to_add):
             if agent.tools is None:
                 agent.tools = []
-            
+
             if isinstance(tools_to_add, list):
                 agent.tools.extend(tools_to_add)
             else:
                 agent.tools.append(tools_to_add)
 
         ctx_tools = [read_current_context, add_fact_to_context, add_claim_to_context]
-        
+
         context_storage_agents = [
             self.researcher,
             self.technical_analyst,

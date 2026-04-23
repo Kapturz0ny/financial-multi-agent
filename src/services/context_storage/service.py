@@ -1,7 +1,8 @@
 import json
-import uuid
 import os
+import uuid
 from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -35,7 +36,7 @@ class ContextStorage:
         """
         # Upewniamy się, że folder istnieje
         os.makedirs(".context", exist_ok=True)
-        
+
         self.file_path = f".context/ctx_{stock_symbol.lower()}.json"
         initial_data: dict[str, list] = {"facts": [], "claims": []}
         self._save_to_file(initial_data)
@@ -76,7 +77,7 @@ class ContextStorage:
         for c in claims:
             content = c.get('content') if isinstance(c, dict) else getattr(c, 'content', None)
             r_id = c.get('refutes_id') if isinstance(c, dict) else getattr(c, 'refutes_id', None)
-            
+
             claim_id = f"claim_{uuid.uuid4().hex[:8]}"
             data["claims"].append({
                 "id": claim_id,

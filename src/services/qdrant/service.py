@@ -1,8 +1,10 @@
 import uuid
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List
+
 from qdrant_client import QdrantClient
-from qdrant_client.http import models
+
 from src.config import get_qdrant_config
+
 
 class QdrantService:
     """Service to handle Session-scoped RAG operations in Qdrant."""
@@ -25,7 +27,7 @@ class QdrantService:
         session_id = uuid.uuid4().hex[:6]
         self.collection_name = f"session_{stock_symbol.lower()}_{session_id}"
 
-        # We use FastEmbed (local) by default. 
+        # We use FastEmbed (local) by default.
         # Qdrant client will automatically handle embedding if we use 'add' method.
         self.client.recreate_collection(
             collection_name=self.collection_name,
@@ -42,7 +44,7 @@ class QdrantService:
 
         # Simple chunking logic
         chunks = [text[i:i+1000] for i in range(0, len(text), 800)]
-        
+
         self.client.add(
             collection_name=self.collection_name,
             documents=chunks,
@@ -61,7 +63,7 @@ class QdrantService:
             query_text=query,
             limit=limit
         )
-        
+
         return [
             {
                 "content": res.document,
@@ -70,12 +72,12 @@ class QdrantService:
             }
             for res in results
         ]
-    
+
     def get_all_evidence(self) -> list:
         """Retrieve all stored evidence from the current session's vector database."""
         if not self.collection_name:
             return []
-        
+
         try:
             records, _ = self.client.scroll(
                 collection_name=self.collection_name,
@@ -83,7 +85,7 @@ class QdrantService:
                 with_payload=True,
                 with_vectors=False
             )
-            
+
             evidence_list = []
             for record in records:
                 payload = record.payload or {}

@@ -7,10 +7,10 @@ from markdown_it import MarkdownIt
 
 from src.config import LLMProvider, get_default_provider
 from src.crews import CrewMode, StockAnalysisCrewFactory
+from src.tools.qdrant_tools import qdrant_service
 from src.utils.chart_builder import ChartBuilder
 from src.utils.pdf_exporter import PDFReportExporter
 from src.utils.report_evaluator import ReportEvaluator
-from src.tools.qdrant_tools import qdrant_service
 
 INTERVAL_MAPPING = [
     {"period": "1d", "interval": "1m"},
@@ -269,10 +269,10 @@ if st.session_state.report is not None:
     if st.session_state.report_context:
         with st.expander("📦 View Context Storage (Blackboard Data)", expanded=False):
             st.info("This shared memory contains the structured facts and claims used by agents during the debate.")
-            
+
             ctx_data = st.session_state.report_context
             tab_facts, tab_claims, tab_evidence, tab_json = st.tabs(["📌 Facts", "💡 Claims", "📚 Raw Evidence (Qdrant)", "📄 Raw JSON"])
-            
+
             with tab_facts:
                 if ctx_data.get("facts"):
                     df_facts = pd.DataFrame(ctx_data["facts"])
@@ -280,7 +280,7 @@ if st.session_state.report is not None:
                     st.dataframe(df_facts[cols], width='stretch', hide_index=True)
                 else:
                     st.write("No facts recorded in this session.")
-                    
+
             with tab_claims:
                 if ctx_data.get("claims"):
                     df_claims = pd.DataFrame(ctx_data["claims"])
@@ -290,14 +290,14 @@ if st.session_state.report is not None:
                     st.dataframe(df_claims[cols], width='stretch', hide_index=True)
                 else:
                     st.write("No claims recorded in this session.")
-            
+
             with tab_evidence:
                 if st.session_state.get("report_evidence"):
                     df_evidence = pd.DataFrame(st.session_state.report_evidence)
                     st.dataframe(df_evidence, width='stretch', hide_index=True)
                 else:
                     st.write("No raw evidence recorded in the vector database for this session.")
-                    
+
             with tab_json:
                 st.json(ctx_data)
 
