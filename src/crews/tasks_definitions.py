@@ -13,16 +13,19 @@ class TaskType(Enum):
     FUNDAMENTAL_ANALYSIS = "fundamental_analysis"
     REPORTING = "reporting"
 
-    # Tasks enhanced with Context Storage usage
-    CS_RESEARCH = "cs_research"
-    CS_TECHNICAL = "cs_technical"
-    CS_FUNDAMENTAL = "cs_fundamental"
-    CS_REPORTING = "cs_reporting"
-
     # Debate and synthesis tasks
     SCEPTIC = "sceptic"
     TRUST = "trust"
     SYNTHESIS = "synthesis"
+
+    # Tasks enhanced with Context Storage, RAG usage
+    CS_RESEARCH = "cs_research"
+    CS_TECHNICAL = "cs_technical"
+    CS_FUNDAMENTAL = "cs_fundamental"
+    CS_REPORTING = "cs_reporting"
+    CS_SCEPTIC = "cs_sceptic"
+    CS_TRUST = "cs_trust"
+    CS_SYNTHESIS = "cs_synthesis"
 
 
 # Task configurations
@@ -110,6 +113,40 @@ TASK_CONFIGS = {
     },
     TaskType.SCEPTIC: {
         "description": (
+            "Play devil's advocate for '{stock_symbol}' investment thesis. "
+            "Identify risks, weaknesses, potential downsides, and challenges to the bullish case. "
+            "Challenge assumptions made by other analysts. Be critical and thorough."
+        ),
+        "expected_output": (
+            "Critical analysis highlighting risks, weaknesses, potential problems, and downsides "
+            "for '{stock_symbol}'. Focus on what could go wrong and alternative bearish scenarios."
+        ),
+    },
+    TaskType.TRUST: {
+        "description": (
+            "Verify data credibility and validate claims about '{stock_symbol}'. "
+            "Cross-check information across sentiment, technical, and fundamental analyses. "
+            "Confirm source reliability and data accuracy."
+        ),
+        "expected_output": (
+            "Data verification report confirming accuracy and reliability of sources used "
+            "in the analysis of '{stock_symbol}'."
+        ),
+    },
+    TaskType.SYNTHESIS: {
+        "description": (
+            "You are the investment committee leader. Synthesize all perspectives on '{stock_symbol}' "
+            "from Researcher, Technical Analyst, Fundamental Analyst, Sceptic, and Trust Specialist. "
+            "Integrate their insights, resolve conflicts, address sceptic concerns, and create a final consensus report. "
+            "Provide clear investment recommendation (Buy/Sell/Hold) with price target."
+        ),
+        "expected_output": (
+            "Comprehensive investment report including executive summary, sentiment analysis, technical analysis, "
+            "fundamental analysis, risk assessment, convergences/divergences, catalysts, and final recommendation."
+        ),
+    },
+    TaskType.CS_SCEPTIC: {
+        "description": (
             "Act as devil's advocate for '{stock_symbol}'. "
             "1. FIRST, 'Read Current Context' to identify IDs of claims/facts to challenge.\n"
             "2. Use `query_session_evidence` to search the vector database for the raw source texts to scrutinize.\n"
@@ -121,7 +158,7 @@ TASK_CONFIGS = {
         ),
         "expected_output": "SUCCESS: Critical analysis completed and saved to Context Storage.",
     },
-    TaskType.TRUST: {
+    TaskType.CS_TRUST: {
         "description": (
             "Verify data for '{stock_symbol}'. "
             "1. FIRST, 'Read Current Context' to find IDs to verify.\n"
@@ -133,7 +170,7 @@ TASK_CONFIGS = {
         ),
         "expected_output": "SUCCESS: Data verification completed and saved to Context Storage.",
     },
-    TaskType.SYNTHESIS: {
+    TaskType.CS_SYNTHESIS: {
         "description": (
             "Orchestrate the '{stock_symbol}' analysis process: "
             "1. Direct Researcher, Technical, and Fundamental analysts to populate Context Storage. "

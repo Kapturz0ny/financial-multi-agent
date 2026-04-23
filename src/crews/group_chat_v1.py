@@ -6,12 +6,12 @@ from crewai.process import Process
 from src.config import LLMConfig
 from src.crews.agents_definitions import (
     create_fundamental_analyst_agent,
-    create_leader_agent,
+    create_leader_agent_v1,
     create_reporter_agent,
     create_researcher_agent,
-    create_sceptic_agent,
+    create_sceptic_agent_v1,
     create_technical_analyst_agent,
-    create_trust_agent,
+    create_trust_agent_v1,
 )
 from src.crews.tasks_definitions import TaskType, create_task
 from src.tools.context_storage_tools import (
@@ -27,7 +27,7 @@ from src.tools.qdrant_tools import (
 )
 
 
-class GroupChatStockAnalysisCrew:
+class GroupChatV1StockAnalysisCrew:
     """Group Chat mode - 6 agents in hierarchical debate with Leader orchestrating."""
 
     def __init__(self, config: LLMConfig):
@@ -47,14 +47,14 @@ class GroupChatStockAnalysisCrew:
         self.fundamental_analyst = create_fundamental_analyst_agent(self.llm)
 
         # Agents for debate
-        self.sceptic = create_sceptic_agent(self.llm)
-        self.trust_agent = create_trust_agent(self.llm)
+        self.sceptic = create_sceptic_agent_v1(self.llm)
+        self.trust_agent = create_trust_agent_v1(self.llm)
 
         # Reporter/Strategist agent with access to context storage for final synthesis
         self.reporter = create_reporter_agent(self.llm)
 
         # Leader agent to orchestrate the process
-        self.leader = create_leader_agent(self.llm)
+        self.leader = create_leader_agent_v1(self.llm)
 
         def add_tools_to_agent(agent, tools_to_add):
             if agent.tools is None:
@@ -105,8 +105,8 @@ class GroupChatStockAnalysisCrew:
         technical_task = create_task(TaskType.CS_TECHNICAL, self.technical_analyst)
         fundamental_task = create_task(TaskType.CS_FUNDAMENTAL, self.fundamental_analyst)
 
-        sceptic_task = create_task(TaskType.SCEPTIC, self.sceptic)
-        trust_task = create_task(TaskType.TRUST, self.trust_agent)
+        sceptic_task = create_task(TaskType.CS_SCEPTIC, self.sceptic)
+        trust_task = create_task(TaskType.CS_TRUST, self.trust_agent)
 
         reporting_task = create_task(TaskType.CS_REPORTING, self.reporter)
 

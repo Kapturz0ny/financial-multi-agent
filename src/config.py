@@ -57,7 +57,7 @@ class LLMConfig:
         elif self.provider == LLMProvider.OPENAI:
             self.base_model = "gpt-4.1"
             self.advanced_model = "gpt-4.1"
-            self.temperature = 0.2
+            self.temperature = 0.5
 
 
 class QdrantConfig:

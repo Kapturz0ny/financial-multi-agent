@@ -107,12 +107,14 @@ crew_mode = st.sidebar.radio(
     options=[
         CrewMode.SEQUENTIAL.value,
         CrewMode.PARALLEL.value,
-        CrewMode.GROUP_CHAT.value
+        CrewMode.GROUP_CHAT_V0.value,
+        CrewMode.GROUP_CHAT_V1.value
     ],
     format_func=lambda x: {
         CrewMode.SEQUENTIAL.value: "Sequential",
         CrewMode.PARALLEL.value: "Parallel",
-        CrewMode.GROUP_CHAT.value: "Group Chat"
+        CrewMode.GROUP_CHAT_V0.value: "Group Chat (Original)",
+        CrewMode.GROUP_CHAT_V1.value: "Group Chat (CS + RAG)"
     }.get(x, str(x)),
     horizontal=True
 )
@@ -178,7 +180,7 @@ if sidebar_col2.button("Generate report", type="primary", width='stretch'):
             st.session_state.execution_time = result["execution_time"]
             st.session_state.report_context = result.get("context_data")
 
-            if crew_mode == CrewMode.GROUP_CHAT.value:
+            if crew_mode == CrewMode.GROUP_CHAT_V1.value:
                 st.session_state.report_evidence = qdrant_service.get_all_evidence()
             else:
                 st.session_state.report_evidence = None
@@ -213,9 +215,10 @@ if st.session_state.report is not None:
     col1, col2, col3 = st.columns(3)
     with col1:
         mode_labels = {
-            CrewMode.SEQUENTIAL.value: "Sequential (Original)",
+            CrewMode.SEQUENTIAL.value: "Sequential",
             CrewMode.PARALLEL.value: "Parallel",
-            CrewMode.GROUP_CHAT.value: "Group Chat (FinDebate)"
+            CrewMode.GROUP_CHAT_V0.value: "Group Chat V0",
+            CrewMode.GROUP_CHAT_V1.value: "Group Chat (CS + RAG)"
         }
         mode_label = mode_labels.get(st.session_state.report_mode, st.session_state.report_mode)
         st.metric("Analysis Mode", mode_label)

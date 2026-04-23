@@ -63,7 +63,7 @@ def create_reporter_agent(llm: LLM) -> Agent:
     )
 
 
-def create_sceptic_agent(llm: LLM) -> Agent:
+def create_sceptic_agent_v1(llm: LLM) -> Agent:
     """Create Sceptic (Devil's Advocate) agent for group chat."""
     return Agent(
         role="Devil's Advocate - Sceptic",
@@ -81,7 +81,7 @@ def create_sceptic_agent(llm: LLM) -> Agent:
     )
 
 
-def create_trust_agent(llm: LLM) -> Agent:
+def create_trust_agent_v1(llm: LLM) -> Agent:
     """Create Trust/Data Verification Specialist agent for group chat."""
     return Agent(
         role="Data Verification Specialist - Trust Builder",
@@ -99,7 +99,7 @@ def create_trust_agent(llm: LLM) -> Agent:
     )
 
 
-def create_leader_agent(llm: LLM) -> Agent:
+def create_leader_agent_v1(llm: LLM) -> Agent:
     """Create Leader/Discussion Moderator agent for group chat."""
     return Agent(
         role="Leader & Discussion Moderator",
@@ -115,6 +115,49 @@ def create_leader_agent(llm: LLM) -> Agent:
             "2) Force the Sceptic and Trust agents to rigorously challenge and verify that data. "
             "3) Finally, delegate the creation of the definitive report to the Reporter."
         ),
+        llm=llm,
+        tools=[],
+        verbose=True,
+        memory=True,
+        allow_code_execution=False,
+        allow_delegation=True,
+    )
+
+
+def create_sceptic_agent_v0(llm: LLM) -> Agent:
+    """Create Sceptic (Devil's Advocate) agent for group chat."""
+    return Agent(
+        role="Devil's Advocate - Sceptic",
+        goal="Challenge assumptions, identify risks, and point out potential weaknesses in the investment thesis for {stock_symbol}",
+        backstory="You are a critical thinker who specializes in identifying hidden risks, flawed logic, and overlooked downsides. Your role is to ensure the team doesn't fall into confirmation bias.",
+        llm=llm,
+        tools=[],
+        verbose=True,
+        memory=True,
+        allow_code_execution=False,
+    )
+
+
+def create_trust_agent_v0(llm: LLM) -> Agent:
+    """Create Trust/Data Verification Specialist agent for group chat."""
+    return Agent(
+        role="Data Verification Specialist - Trust Builder",
+        goal="Verify data accuracy, validate source credibility, and ensure all claims are well-substantiated for {stock_symbol}",
+        backstory="You are meticulous about data integrity and source verification. Your expertise ensures that conclusions are grounded in reliable, well-documented evidence and not speculation.",
+        llm=llm,
+        tools=[],
+        verbose=True,
+        memory=True,
+        allow_code_execution=False,
+    )
+
+
+def create_leader_agent_v0(llm: LLM) -> Agent:
+    """Create Leader/Discussion Moderator agent for group chat."""
+    return Agent(
+        role="Discussion Moderator & Chief Synthesizer",
+        goal="Moderate the team discussion, synthesize all perspectives into a cohesive final report for {stock_symbol}. ALWAYS end by asking for final advice from Trust Agent and Sceptic Agent before making final recommendation. Use all available agents to provide information for example Senior Stock Market Researcher, Expert Technical Analyst, Senior Fundamental Analyst.",
+        backstory="As a senior investment strategist with 20 years of experience, you excel at extracting the strongest arguments from debate, integrating diverse perspectives, and forging consensus on a clear investment recommendation. Your approach: gather all perspectives → delegate to specialists → always consult Trust Agent for data verification → always consult Sceptic Agent for risks → synthesize into final recommendation.",
         llm=llm,
         tools=[],
         verbose=True,
