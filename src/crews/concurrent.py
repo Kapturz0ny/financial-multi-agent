@@ -1,4 +1,5 @@
 from time import time
+from concurrent.futures import ThreadPoolExecutor
 
 from crewai import LLM, Crew
 
@@ -28,6 +29,10 @@ class ConcurrentStockAnalysisCrew:
           cross-awareness claims (with refutes_id when correcting peers).
       R3 (sync): Reporter synthesizes the final markdown report from the Blackboard.
     """
+
+    # Hard caps to prevent runaway behavior in the parallel rounds.
+    PER_TASK_TIMEOUT_S = 300  # ThreadPoolExecutor future timeout per specialist task
+    CREW_MAX_RPM = 50         # CrewAI per-Crew RPM throttle (mitigates 429s)
 
     def __init__(self, config: LLMConfig):
         self.config = config
@@ -68,6 +73,30 @@ class ConcurrentStockAnalysisCrew:
         add_tools_to_agent(self.fundamental_analyst, store_session_evidence)
         add_tools_to_agent(self.reporter, query_session_evidence)
 
+    def _run_parallel_round(self, task_specs: list[tuple], inputs: dict):
+        """Run a round in parallel by using one single-task crew per specialist.
+
+        Each specialist gets its own Crew throttled by max_rpm. Hard timeout on
+        each future guarantees we never wait forever if a tool/LLM call hangs.
+        """
+
+        def _run_single(agent, task_type):
+            task = create_task(task_type, agent, async_execution=False)
+            crew = Crew(
+                agents=[agent],
+                tasks=[task],
+                cache=True,
+                verbose=False,
+                max_rpm=self.CREW_MAX_RPM,
+            )
+            return crew.kickoff(inputs=inputs)
+
+        max_workers = len(task_specs)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [executor.submit(_run_single, agent, task_type) for task_type, agent in task_specs]
+            for future in futures:
+                future.result(timeout=self.PER_TASK_TIMEOUT_S)
+
     def run(self, stock_symbol: str) -> dict:
         """
         Run the 3-round concurrent crew and return the report with metadata.
@@ -79,56 +108,44 @@ class ConcurrentStockAnalysisCrew:
             Dictionary with mode, provider, execution_time, report and context_data
         """
         start_time = time()
+        inputs = {"stock_symbol": stock_symbol.upper()}
 
         context_storage.initialize_session(stock_symbol)
         qdrant_service.initialize_session(stock_symbol)
 
-        # Round 1 - parallel data gathering
-        r1_research = create_task(TaskType.CS_RESEARCH, self.researcher, async_execution=True)
-        r1_technical = create_task(TaskType.CS_TECHNICAL, self.technical_analyst, async_execution=True)
-        r1_fundamental = create_task(TaskType.CS_FUNDAMENTAL, self.fundamental_analyst, async_execution=True)
+        # Round 1 - parallel data gathering (separate single-task crews)
+        round_1_specs = [
+            (TaskType.CS_RESEARCH, self.researcher),
+            (TaskType.CS_TECHNICAL, self.technical_analyst),
+            (TaskType.CS_FUNDAMENTAL, self.fundamental_analyst),
+        ]
 
-        round_1 = [r1_research, r1_technical, r1_fundamental]
+        # Round 2 - parallel cross-awareness refine (separate single-task crews)
+        round_2_specs = [
+            (TaskType.CONCURRENT_RESEARCH_REFINE, self.researcher),
+            (TaskType.CONCURRENT_TECHNICAL_REFINE, self.technical_analyst),
+            (TaskType.CONCURRENT_FUNDAMENTAL_REFINE, self.fundamental_analyst),
+        ]
 
-        # Round 2 - parallel cross-awareness refine, gated on the entire Round 1
-        r2_research = create_task(
-            TaskType.CONCURRENT_RESEARCH_REFINE,
-            self.researcher,
-            context=round_1,
-            async_execution=True,
-        )
-        r2_technical = create_task(
-            TaskType.CONCURRENT_TECHNICAL_REFINE,
-            self.technical_analyst,
-            context=round_1,
-            async_execution=True,
-        )
-        r2_fundamental = create_task(
-            TaskType.CONCURRENT_FUNDAMENTAL_REFINE,
-            self.fundamental_analyst,
-            context=round_1,
-            async_execution=True,
-        )
-
-        round_2 = [r2_research, r2_technical, r2_fundamental]
-
-        # Round 3 - synchronous synthesis, waits for both R1 and R2
+        # Round 3 - synchronous synthesis after both parallel rounds complete
         reporting_task = create_task(
             TaskType.CS_REPORTING,
             self.reporter,
-            context=round_1 + round_2,
             async_execution=False,
         )
 
-        crew = Crew(
-            agents=[self.researcher, self.technical_analyst, self.fundamental_analyst, self.reporter],
-            tasks=round_1 + round_2 + [reporting_task],
+        reporting_crew = Crew(
+            agents=[self.reporter],
+            tasks=[reporting_task],
             cache=True,
-            verbose=True,
+            verbose=False,
+            max_rpm=self.CREW_MAX_RPM,
         )
 
         try:
-            result = crew.kickoff(inputs={"stock_symbol": stock_symbol.upper()})
+            self._run_parallel_round(round_1_specs, inputs)
+            self._run_parallel_round(round_2_specs, inputs)
+            result = reporting_crew.kickoff(inputs=inputs)
             execution_time = time() - start_time
 
             return {

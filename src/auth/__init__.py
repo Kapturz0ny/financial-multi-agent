@@ -4,6 +4,7 @@ from src.auth.quota import (
     METERED_PROVIDERS,
     count_today,
     record_usage,
+    reset_today_usage,
     remaining,
 )
 
@@ -12,6 +13,7 @@ __all__ = [
     "logout_button",
     "count_today",
     "record_usage",
+    "reset_today_usage",
     "remaining",
     "DAILY_QUERY_LIMIT",
     "METERED_PROVIDERS",

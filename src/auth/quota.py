@@ -86,3 +86,24 @@ def record_usage(
             (username, _today(), provider.lower(), ticker, mode),
         )
         conn.commit()
+
+
+def reset_today_usage(
+    username: str,
+    providers: Iterable[str] = METERED_PROVIDERS,
+) -> int:
+    """Delete today's metered usage rows for a user and return how many rows were removed."""
+    providers = tuple(providers)
+    if not providers:
+        return 0
+
+    placeholders = ",".join("?" * len(providers))
+    sql = (
+        f"DELETE FROM usage_log "
+        f"WHERE username = ? AND run_date = ? AND provider IN ({placeholders})"
+    )
+    with _db_lock, _connect() as conn:
+        _ensure_schema(conn)
+        cursor = conn.execute(sql, (username, _today(), *providers))
+        conn.commit()
+        return int(cursor.rowcount or 0)
