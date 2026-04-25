@@ -27,6 +27,11 @@ class TaskType(Enum):
     CS_TRUST = "cs_trust"
     CS_SYNTHESIS = "cs_synthesis"
 
+    # Concurrent architecture - Round 2 cross-awareness refine tasks
+    CONCURRENT_RESEARCH_REFINE = "concurrent_research_refine"
+    CONCURRENT_TECHNICAL_REFINE = "concurrent_technical_refine"
+    CONCURRENT_FUNDAMENTAL_REFINE = "concurrent_fundamental_refine"
+
 
 # Task configurations
 TASK_CONFIGS = {
@@ -240,6 +245,47 @@ TASK_CONFIGS = {
             "## 7. Final Recommendation\n"
             "Actionable, well-reasoned conclusion with a professional investment outlook."
         ),
+    },
+    TaskType.CONCURRENT_RESEARCH_REFINE: {
+        "description": (
+            "Cross-awareness refine for '{stock_symbol}'. Round 1 specialists (yourself, Technical, Fundamental) "
+            "have already populated the Context Storage with their facts.\n"
+            "1. Use 'Read Current Context' to inspect what the Technical Analyst and Fundamental Analyst recorded.\n"
+            "2. Identify points where their findings strengthen, contradict, or reframe your sentiment/news view.\n"
+            "3. Use 'Add Claim to Context' with `agent_name` 'Senior Stock Market Researcher'. "
+            "When you correct or qualify someone else's fact/claim, set `refutes_id` to that entry's ID.\n"
+            "CONSTRAINTS: MAX 2 claims, 0 new facts. DO NOT call data tools again - work only on what is in Context Storage. "
+            "DO NOT put IDs in the content text."
+        ),
+        "expected_output": "SUCCESS: Researcher cross-awareness claims saved to Context Storage.",
+    },
+    TaskType.CONCURRENT_TECHNICAL_REFINE: {
+        "description": (
+            "Cross-awareness refine for '{stock_symbol}'. Round 1 specialists (yourself, Researcher, Fundamental) "
+            "have already populated the Context Storage with their facts.\n"
+            "1. Use 'Read Current Context' to inspect what the Researcher (sentiment/news) and Fundamental Analyst recorded.\n"
+            "2. From the technical perspective, judge whether their findings are confirmed by the chart "
+            "(e.g. positive sentiment vs. bearish breakdown) or in conflict.\n"
+            "3. Use 'Add Claim to Context' with `agent_name` 'Expert Technical Analyst'. "
+            "When you correct or qualify someone else's fact/claim, set `refutes_id` to that entry's ID.\n"
+            "CONSTRAINTS: MAX 2 claims, 0 new facts. DO NOT call data tools again - work only on what is in Context Storage. "
+            "DO NOT put IDs in the content text."
+        ),
+        "expected_output": "SUCCESS: Technical cross-awareness claims saved to Context Storage.",
+    },
+    TaskType.CONCURRENT_FUNDAMENTAL_REFINE: {
+        "description": (
+            "Cross-awareness refine for '{stock_symbol}'. Round 1 specialists (yourself, Researcher, Technical) "
+            "have already populated the Context Storage with their facts.\n"
+            "1. Use 'Read Current Context' to inspect what the Researcher (sentiment/news) and Technical Analyst recorded.\n"
+            "2. From the fundamental perspective, judge whether their findings are supported by the financials "
+            "(e.g. bullish technicals vs. weak earnings) or in conflict.\n"
+            "3. Use 'Add Claim to Context' with `agent_name` 'Senior Fundamental Analyst'. "
+            "When you correct or qualify someone else's fact/claim, set `refutes_id` to that entry's ID.\n"
+            "CONSTRAINTS: MAX 2 claims, 0 new facts. DO NOT call data tools again - work only on what is in Context Storage. "
+            "DO NOT put IDs in the content text."
+        ),
+        "expected_output": "SUCCESS: Fundamental cross-awareness claims saved to Context Storage.",
     },
 }
 

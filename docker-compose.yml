@@ -9,6 +9,7 @@ services:
     volumes:
       - ./.context:/app/.context
       - ./src:/app/src
+      - ./data:/app/data
     networks:
       - analytics-network
     depends_on:

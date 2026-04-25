@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Optional
 
 from src.config import load_config
+from src.crews.concurrent import ConcurrentStockAnalysisCrew
 from src.crews.group_chat_v0 import GroupChatV0StockAnalysisCrew
 from src.crews.group_chat_v1 import GroupChatV1StockAnalysisCrew
 from src.crews.parallel import ParallelStockAnalysisCrew
@@ -15,6 +16,7 @@ class CrewMode(Enum):
     GROUP_CHAT_V0 = "group_chat_v0"
     GROUP_CHAT_V1 = "group_chat_v1"
     PARALLEL = "parallel"
+    CONCURRENT = "concurrent"
 
 
 class StockAnalysisCrewFactory:
@@ -45,5 +47,7 @@ class StockAnalysisCrewFactory:
             return GroupChatV1StockAnalysisCrew(config)
         elif mode.lower() == CrewMode.PARALLEL.value:
             return ParallelStockAnalysisCrew(config)
+        elif mode.lower() == CrewMode.CONCURRENT.value:
+            return ConcurrentStockAnalysisCrew(config)
         else:
             raise ValueError(f"Unknown crew mode: {mode}.")

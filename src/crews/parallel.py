@@ -2,7 +2,7 @@ from time import time
 
 from crewai import LLM, Crew
 
-from src.config import LLMConfig
+from src.config import LLMConfig, LLMProvider
 from src.crews.agents_definitions import (
     create_fundamental_analyst_agent,
     create_reporter_agent,
@@ -17,11 +17,14 @@ class ParallelStockAnalysisCrew:
 
     def __init__(self, config: LLMConfig):
         self.config = config
-        self.llm = LLM(
-            model=self.config.base_model,
-            api_key=self.config.api_key,
-            temperature=0.2,
-        )
+        llm_kwargs = {
+            "model": self.config.base_model,
+            "api_key": self.config.api_key,
+            "temperature": 0.2,
+        }
+        if self.config.provider == LLMProvider.LOCAL:
+            llm_kwargs["base_url"] = self.config.api_base
+        self.llm = LLM(**llm_kwargs)
         self._initialize_agents_and_tasks()
 
     def _initialize_agents_and_tasks(self):

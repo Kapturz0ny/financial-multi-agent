@@ -5,8 +5,10 @@ import plotly.graph_objects as go
 import streamlit as st
 from markdown_it import MarkdownIt
 
+from src.auth import DAILY_QUERY_LIMIT, logout_button, record_usage, remaining, require_login
 from src.config import LLMProvider, get_default_provider
 from src.crews import CrewMode, StockAnalysisCrewFactory
+from src.llm_router import select_provider
 from src.tools.qdrant_tools import qdrant_service
 from src.utils.chart_builder import ChartBuilder
 from src.utils.pdf_exporter import PDFReportExporter
@@ -85,21 +87,42 @@ if "report_context" not in st.session_state:
     st.session_state.report_context = None
 if "report_evidence" not in st.session_state:
     st.session_state.report_evidence = None
+if "fallback_active" not in st.session_state:
+    st.session_state.fallback_active = False
+if "fallback_reason" not in st.session_state:
+    st.session_state.fallback_reason = None
+if "last_effective_provider" not in st.session_state:
+    st.session_state.last_effective_provider = None
 
 st.set_page_config("Stock Investment Report", layout="wide")
 st.title("📈 Stock Investment Analysis Platform")
 
+current_user = require_login()
+username = current_user["username"]
 
 st.sidebar.header("Configuration")
+st.sidebar.markdown(f"👤 Zalogowano jako **{current_user.get('name') or username}**")
+st.sidebar.info(f"Pozostało zapytań dziś: {remaining(username)}/{DAILY_QUERY_LIMIT}")
+logout_button(location="sidebar")
+st.sidebar.divider()
 ticker = st.sidebar.text_input("Stock symbol (eg. AAPL)")
 time_period = st.sidebar.selectbox("Time period", [period["period"] for period in INTERVAL_MAPPING])
 chart_type = st.sidebar.selectbox("Chart Type", ["Candlestick", "Line"])
 
+_provider_labels = {
+    LLMProvider.GEMINI.value: "Gemini",
+    LLMProvider.OPENAI.value: "OpenAI",
+    LLMProvider.LOCAL.value: "Local Llama (Ollama)",
+}
+_provider_options = [p.value for p in LLMProvider]
+_default_provider_value = get_default_provider().lower()
+_default_index = _provider_options.index(_default_provider_value) if _default_provider_value in _provider_options else 0
+
 llm_provider = st.sidebar.selectbox(
     "LLM Provider",
-    options=[provider.value for provider in LLMProvider],
-    index=0 if get_default_provider().lower() == "gemini" else 1,
-    format_func=lambda x: "Gemini" if x == "gemini" else "OpenAI",
+    options=_provider_options,
+    index=_default_index,
+    format_func=lambda x: _provider_labels.get(x, x),
 )
 
 crew_mode = st.sidebar.radio(
@@ -107,12 +130,14 @@ crew_mode = st.sidebar.radio(
     options=[
         CrewMode.SEQUENTIAL.value,
         CrewMode.PARALLEL.value,
+        CrewMode.CONCURRENT.value,
         CrewMode.GROUP_CHAT_V0.value,
         CrewMode.GROUP_CHAT_V1.value
     ],
     format_func=lambda x: {
         CrewMode.SEQUENTIAL.value: "Sequential",
         CrewMode.PARALLEL.value: "Parallel",
+        CrewMode.CONCURRENT.value: "Concurrent (Multi-round)",
         CrewMode.GROUP_CHAT_V0.value: "Group Chat (Original)",
         CrewMode.GROUP_CHAT_V1.value: "Group Chat (CS + RAG)"
     }.get(x, str(x)),
@@ -169,7 +194,15 @@ if sidebar_col1.button("Update", type="primary", width='stretch'):
 if sidebar_col2.button("Generate report", type="primary", width='stretch'):
     with st.spinner("Running multi-agent analysis…"):
         try:
-            crew = StockAnalysisCrewFactory.create(crew_mode, llm_provider)
+            effective_provider = select_provider(
+                username,
+                requested_provider=llm_provider,
+                fallback_state=st.session_state,
+            )
+            st.session_state.last_effective_provider = effective_provider
+            record_usage(username, effective_provider, ticker=ticker, mode=crew_mode)
+
+            crew = StockAnalysisCrewFactory.create(crew_mode, effective_provider)
             result = crew.run(ticker)
 
             report_md = format_markdown(str(result["report"]))
@@ -180,12 +213,15 @@ if sidebar_col2.button("Generate report", type="primary", width='stretch'):
             st.session_state.execution_time = result["execution_time"]
             st.session_state.report_context = result.get("context_data")
 
-            if crew_mode == CrewMode.GROUP_CHAT_V1.value:
+            if crew_mode in (CrewMode.GROUP_CHAT_V1.value, CrewMode.CONCURRENT.value):
                 st.session_state.report_evidence = qdrant_service.get_all_evidence()
             else:
                 st.session_state.report_evidence = None
         except ValueError as e:
             st.error(f"Configuration Error: {str(e)}\n\nPlease ensure API keys are set in your .env file.")
+
+if st.session_state.get("fallback_active") and st.session_state.get("fallback_reason"):
+    st.warning(st.session_state["fallback_reason"])
 
 if st.session_state.stock_metrics is not None:
     last_close = st.session_state.stock_metrics["last_close"]
@@ -217,13 +253,14 @@ if st.session_state.report is not None:
         mode_labels = {
             CrewMode.SEQUENTIAL.value: "Sequential",
             CrewMode.PARALLEL.value: "Parallel",
+            CrewMode.CONCURRENT.value: "Concurrent (Multi-round)",
             CrewMode.GROUP_CHAT_V0.value: "Group Chat V0",
             CrewMode.GROUP_CHAT_V1.value: "Group Chat (CS + RAG)"
         }
         mode_label = mode_labels.get(st.session_state.report_mode, st.session_state.report_mode)
         st.metric("Analysis Mode", mode_label)
     with col2:
-        provider_label = "Gemini" if st.session_state.report_provider == "gemini" else "OpenAI"
+        provider_label = _provider_labels.get(st.session_state.report_provider, st.session_state.report_provider)
         st.metric("LLM Provider", provider_label)
     with col3:
         st.metric("Execution Time", f"{st.session_state.execution_time:.1f}s")

@@ -1,5 +1,6 @@
 import json
 import os
+import threading
 import uuid
 from typing import Optional
 
@@ -28,6 +29,9 @@ class ContextStorage:
 
     def __init__(self, default_path: str = "current_context.json"):
         self.file_path = default_path
+        # Concurrent architecture runs Round 1 / Round 2 with 3 async tasks writing
+        # to the same JSON file; protect the read-modify-write cycle.
+        self._lock = threading.Lock()
 
     def initialize_session(self, stock_symbol: str):
         """
@@ -56,38 +60,40 @@ class ContextStorage:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
     def add_facts(self, agent_name: str, facts: list[FactEntry]) -> str:
-        data = self._load_from_file()
-        added_ids = []
-        for f in facts:
-            content = f.get('content') if isinstance(f, dict) else getattr(f, 'content', None)
+        with self._lock:
+            data = self._load_from_file()
+            added_ids = []
+            for f in facts:
+                content = f.get('content') if isinstance(f, dict) else getattr(f, 'content', None)
 
-            fact_id = f"fact_{uuid.uuid4().hex[:8]}"
-            data["facts"].append({
-                "id": fact_id,
-                "agent": agent_name,
-                "content": content,
-            })
-            added_ids.append(fact_id)
-        self._save_to_file(data)
+                fact_id = f"fact_{uuid.uuid4().hex[:8]}"
+                data["facts"].append({
+                    "id": fact_id,
+                    "agent": agent_name,
+                    "content": content,
+                })
+                added_ids.append(fact_id)
+            self._save_to_file(data)
         return f"Success: Added {len(added_ids)} facts: {', '.join(added_ids)}"
 
     def add_claims(self, agent_name: str, claims: list[ClaimEntry]) -> str:
-        data = self._load_from_file()
-        added_ids = []
-        for c in claims:
-            content = c.get('content') if isinstance(c, dict) else getattr(c, 'content', None)
-            r_id = c.get('refutes_id') if isinstance(c, dict) else getattr(c, 'refutes_id', None)
+        with self._lock:
+            data = self._load_from_file()
+            added_ids = []
+            for c in claims:
+                content = c.get('content') if isinstance(c, dict) else getattr(c, 'content', None)
+                r_id = c.get('refutes_id') if isinstance(c, dict) else getattr(c, 'refutes_id', None)
 
-            claim_id = f"claim_{uuid.uuid4().hex[:8]}"
-            data["claims"].append({
-                "id": claim_id,
-                "agent": agent_name,
-                "content": content,
-                "refutes_id": r_id,
-            })
-            added_ids.append(claim_id)
+                claim_id = f"claim_{uuid.uuid4().hex[:8]}"
+                data["claims"].append({
+                    "id": claim_id,
+                    "agent": agent_name,
+                    "content": content,
+                    "refutes_id": r_id,
+                })
+                added_ids.append(claim_id)
 
-        self._save_to_file(data)
+            self._save_to_file(data)
         return f"Success: Added {len(added_ids)} claims."
 
     def get_context(self) -> str:
