@@ -38,7 +38,7 @@ class ContextStorage:
         Sets a unique file path for the stock and ensures a fresh,
         empty JSON structure exists.
         """
-        # Upewniamy się, że folder istnieje
+        # Ensure the folder exists
         os.makedirs(".context", exist_ok=True)
 
         self.file_path = f".context/ctx_{stock_symbol.lower()}.json"

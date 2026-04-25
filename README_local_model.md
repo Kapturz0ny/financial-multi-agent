@@ -1,71 +1,71 @@
-# Lokalny model LLM (fallback) — instrukcja uruchomienia
+# Local LLM (fallback) - deployment guide
 
-System może używać lokalnego, kwantyzowanego modelu Llama 3.1 (lub kompatybilnego) jako fallback po wyczerpaniu dziennego limitu zapytań do GPT/Gemini, lub jako jawny wybór użytkownika ("Local Llama" w UI).
+The system can use a local, quantized Llama 3.1 model (or compatible) as a fallback when the daily quota of GPT/Gemini queries is exhausted, or as an explicit user choice ("Local Llama" in UI).
 
-Architektura:
+Architecture:
 
 ```
-[ Serwer aplikacyjny ]  --HTTP-->  [ Serwer GPU (Ollama) ]
+[ Application Server ]  --HTTP-->  [ GPU Server (Ollama) ]
    src/app.py                       11434/tcp
    crewai (litellm)                 llama3.1:70b-instruct-q4_K_M
 ```
 
 ---
 
-## 1. Wymagania serwera GPU
+## 1. GPU Server Requirements
 
-| Element | Minimum |
+| Component | Minimum |
 |---|---|
-| GPU | 1× NVIDIA z **≥24 GB VRAM** (RTX 3090, RTX 4090, A5000, A6000, L40, A100) |
+| GPU | 1× NVIDIA with **≥24 GB VRAM** (RTX 3090, RTX 4090, A5000, A6000, L40, A100) |
 | RAM | ≥40 GB |
-| Dysk | ≥80 GB wolnego miejsca (waga modelu ~40 GB + cache) |
-| OS | Linux (Ubuntu 22.04 LTS lub nowsze) |
-| Driver NVIDIA | ≥535 |
-| CUDA | 12.x (Ollama detektuje automatycznie) |
-| Sieć | Maszyna w tej samej VLAN-ie / podsieci co serwer aplikacyjny |
+| Disk | ≥80 GB of free space (model weight ~40 GB + cache) |
+| OS | Linux (Ubuntu 22.04 LTS or newer) |
+| NVIDIA Driver | ≥535 |
+| CUDA | 12.x (Ollama detects automatically) |
+| Network | Machine in the same VLAN / subnet as the application server |
 
 ---
 
-## 2. Instalacja Ollamy (Linux, jednorazowo)
+## 2. Ollama Installation (Linux, one-time)
 
 ```bash
 curl -fsSL https://ollama.com/install.sh | sh
 ```
 
-Skrypt instaluje binarkę do `/usr/local/bin/ollama` oraz rejestruje usługę systemd `ollama.service`.
+The script installs the binary to `/usr/local/bin/ollama` and registers the `ollama.service` systemd service.
 
-Weryfikacja:
+Verification:
 
 ```bash
 ollama --version
 sudo systemctl status ollama
 ```
 
-## 3. Pobranie modelu
+## 3. Downloading the model
 
-Llama 3.1 70B w kwantyzacji Q4_K_M (~40 GB, mieści się w 24 GB VRAM dla kontekstu ≤8k):
+Llama 3.1 70B in Q4_K_M quantization (~40 GB, fits in 24 GB VRAM for context ≤8k):
 
 ```bash
 ollama pull llama3.1:70b-instruct-q4_K_M
 ```
 
-Alternatywy gdy 70B nie mieści się przy zakładanym kontekście:
+Alternatives when 70B does not fit with the assumed context:
 
-- `llama3.1:70b-instruct-q3_K_M` (~33 GB) — mniejsza precyzja, mniejsze VRAM.
-- `qwen2.5:72b-instruct-q4_K_M` — często lepiej trzyma instrukcje JSON-owe od Llamy.
-- `mixtral:8x22b-instruct-q4_K_M` — duży, wymaga ≥40 GB VRAM (na 24 GB GPU NIE zadziała).
+- `llama3.1:70b-instruct-q3_K_M` (~33 GB) - lower precision, less VRAM.
+- `qwen2.5:72b-instruct-q4_K_M` - often follows JSON instructions better than Llama.
+- `mixtral:8x22b-instruct-q4_K_M` - large, requires ≥40 GB VRAM (will NOT work on a 24 GB GPU).
 
-Lista pobranych modeli: `ollama list`.
+List of downloaded models: `ollama list`.
 
-## 4. Wystawienie portu na sieć lokalną
+## 4. Exposing the port to the local network
 
-Domyślnie Ollama słucha na `127.0.0.1:11434`. Trzeba wystawić port na interfejs sieciowy:
+By default, Ollama listens on `127.0.0.1:11434`. You need to expose the port to the network interface:
 
 ```bash
 sudo systemctl edit ollama.service
 ```
 
-W otwartym edytorze dopisz:
+In the opened editor, add:
 
 ```ini
 [Service]
@@ -73,47 +73,47 @@ Environment="OLLAMA_HOST=0.0.0.0:11434"
 Environment="OLLAMA_KEEP_ALIVE=2h"
 ```
 
-(`OLLAMA_KEEP_ALIVE=2h` trzyma model w VRAM między requestami — bez tego pierwsze zapytanie po przerwie ładuje model ~30–60 s.)
+(`OLLAMA_KEEP_ALIVE=2h` keeps the model in VRAM between requests - without this, the first request after a break takes ~30-60s to load the model.)
 
-Następnie:
+Then:
 
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl restart ollama
 ```
 
-Otwórz port 11434 na firewallu **tylko** dla podsieci uczelnianej (przykład UFW):
+Open port 11434 on the firewall **only** for the university subnet (UFW example):
 
 ```bash
 sudo ufw allow from 10.0.0.0/8 to any port 11434 proto tcp
 ```
 
-Dostosuj zakres CIDR do faktycznej podsieci.
+Adjust the CIDR range to the actual subnet.
 
-## 5. Konfiguracja po stronie serwera aplikacyjnego
+## 5. Configuration on the application server side
 
-W pliku `.env` aplikacji:
+In the application loop `.env` file:
 
 ```env
 LOCAL_LLM_BASE_URL=http://<gpu-server-ip>:11434
 LOCAL_LLM_MODEL=llama3.1:70b-instruct-q4_K_M
 ```
 
-Uwaga: `LOCAL_LLM_BASE_URL` to **root URL Ollamy**, BEZ `/v1` na końcu. Aplikacja używa providera `ollama_chat/<model>` w litellm, który sam dorabia ścieżkę API.
+Note: `LOCAL_LLM_BASE_URL` is the **Ollama root URL**, WITHOUT `/v1` at the end. The application uses the provider `ollama_chat/<model>` in litellm, which attaches the API path itself.
 
-Restart aplikacji (`docker compose restart app` lub `make run`).
+Restart the application (`docker compose restart app` or `make run`).
 
-## 6. Test end-to-end
+## 6. End-to-end test
 
-Z serwera aplikacyjnego:
+From the application server:
 
 ```bash
 curl http://<gpu-server-ip>:11434/api/tags
 ```
 
-Spodziewane: JSON ze listą modeli zawierającą `llama3.1:70b-instruct-q4_K_M`.
+Expected: JSON with a list of models containing `llama3.1:70b-instruct-q4_K_M`.
 
-Test inferencji:
+Inference test:
 
 ```bash
 curl http://<gpu-server-ip>:11434/api/generate -d '{
@@ -123,22 +123,22 @@ curl http://<gpu-server-ip>:11434/api/generate -d '{
 }'
 ```
 
-Powinieneś dostać pole `"response"` z odpowiedzią modelu w ciągu ~kilku sekund.
+You should get a `"response"` field with the model's answer in about ~a few seconds.
 
-W UI aplikacji: zaloguj się, w "LLM Provider" wybierz `Local Llama`, uruchom analizę dowolnego tickera. W logach Ollamy (`journalctl -u ollama -f`) zobaczysz przychodzące requesty.
+In the application UI: log in, select `Local Llama` in "LLM Provider", start analysis of any ticker. In Ollama logs (`journalctl -u ollama -f`) you will see incoming requests.
 
 ## 7. Troubleshooting
 
-| Objaw | Przyczyna / rozwiązanie |
+| Symptom | Cause / solution |
 |---|---|
-| `CUDA out of memory` przy ładowaniu modelu | Wybierz mniejszą kwantyzację (Q3_K_M) lub mniejszy model (32B–34B). Zmniejsz kontekst: `OLLAMA_NUM_CTX=4096` w env service. |
-| Pierwszy request trwa 30–60 s | Model jest ładowany do VRAM. Ustaw `OLLAMA_KEEP_ALIVE=2h` (patrz pkt 4). |
-| `connection refused` z aplikacji | Sprawdź czy `OLLAMA_HOST=0.0.0.0:11434`, czy firewall dopuszcza ruch z serwera aplikacyjnego, czy IP GPU-server jest osiągalne (`ping`, `nc -zv <ip> 11434`). |
-| `model 'X' not found` | Brakuje pobranego modelu. `ollama pull <name>` na serwerze GPU. |
-| Bardzo wolna inferencja (≫1 s/token) | GPU nie obsługuje modelu (CPU fallback). Sprawdź `nvidia-smi` pod kątem procesu `ollama_llama_server` — jeśli go nie widać podczas inferencji, sterowniki/CUDA nie działają. |
-| Limit konkurentnych requestów | Jeden serwer Ollamy = jeden request na raz domyślnie. Dla równoczesnej obsługi rozważ vLLM zamiast Ollamy. |
+| `CUDA out of memory` when loading the model | Choose a smaller quantization (Q3_K_M) or a smaller model (32B-34B). Decrease context: `OLLAMA_NUM_CTX=4096` in env service. |
+| First request takes 30-60 s | The model is being loaded into VRAM. Set `OLLAMA_KEEP_ALIVE=2h` (see pt. 4). |
+| `connection refused` from application | Check if `OLLAMA_HOST=0.0.0.0:11434`, if the firewall allows traffic from the application server, if the GPU-server IP is reachable (`ping`, `nc -zv <ip> 11434`). |
+| `model 'X' not found` | Downloaded model is missing. `ollama pull <name>` on the GPU server. |
+| Very slow inference (≫1 s/token) | GPU does not support the model (CPU fallback). Check `nvidia-smi` for the `ollama_llama_server` process - if it's not visible during inference, drivers/CUDA are not working. |
+| Concurrent requests limit | One Ollama server = one request at a time by default. For concurrent handling consider vLLM instead of Ollama. |
 
-## 8. Kiedy aplikacja używa lokalnego modelu
+## 8. When the application uses the local model
 
-- **Automatyczny fallback**: gdy zalogowany użytkownik wyczerpie dzienny limit zapytań do OpenAI/Gemini (`DAILY_QUERY_LIMIT` w `.env`), router (`src/llm_router.py`) zwraca `local`. UI pokazuje banner informacyjny.
-- **Wybór ręczny**: użytkownik wybiera "Local Llama" w sidebarze. Wtedy zapytanie nie jest liczone do limitu (lokalny model nie kosztuje budżetu API).
+- **Automatic fallback**: when a logged-in user exhausts their daily quota to OpenAI/Gemini (`DAILY_QUERY_LIMIT` in `.env`), the router (`src/llm_router.py`) returns `local`. UI shows an info banner.
+- **Manual choice**: user selects "Local Llama" in the sidebar. Then the query is not counted against the quota (the local model does not consume API budget).
