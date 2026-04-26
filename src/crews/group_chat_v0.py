@@ -91,7 +91,7 @@ class GroupChatV0StockAnalysisCrew:
             execution_time = time() - start_time
 
             return {
-                "mode": "group_chat",
+                "mode": "group_chat_v0",
                 "provider": self.config.provider.value,
                 "execution_time": execution_time,
                 "report": str(result),
@@ -99,7 +99,7 @@ class GroupChatV0StockAnalysisCrew:
         except Exception as e:
             execution_time = time() - start_time
             return {
-                "mode": "group_chat",
+                "mode": "group_chat_v0",
                 "provider": self.config.provider.value,
                 "execution_time": execution_time,
                 "report": f"Group Chat mode failed: {str(e)}. Recommend using Sequential mode.",
