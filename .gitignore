@@ -178,3 +178,7 @@ cython_debug/
 
 .context/*.json
 qdrant_storage/
+
+# Auth + usage DB
+data/
+src/auth/credentials.yaml

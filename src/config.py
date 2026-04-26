@@ -14,6 +14,7 @@ class LLMProvider(Enum):
 
     GEMINI = "gemini"
     OPENAI = "openai"
+    LOCAL = "local"
 
 
 class LLMConfig:
@@ -24,7 +25,7 @@ class LLMConfig:
         Initialize LLM configuration.
 
         Args:
-            provider: "gemini" or "openai"
+            provider: "gemini", "openai" or "local"
 
         Raises:
             ValueError: If provider is not supported or API key is missing
@@ -32,8 +33,9 @@ class LLMConfig:
         try:
             self.provider = LLMProvider(provider.lower())
         except ValueError:
-            raise ValueError(f"Unsupported LLM provider: {provider}. Use 'gemini' or 'openai'.")
+            raise ValueError(f"Unsupported LLM provider: {provider}. Use 'gemini', 'openai' or 'local'.")
 
+        self.api_base = None
         self._load_api_key()
         self._set_model_and_params()
 
@@ -47,6 +49,9 @@ class LLMConfig:
             self.api_key = os.getenv("OPENAI_API_KEY")
             if not self.api_key:
                 raise ValueError("OPENAI_API_KEY not found in environment variables")
+        elif self.provider == LLMProvider.LOCAL:
+            # Ollama / vLLM ignore the key but litellm still wants something non-empty.
+            self.api_key = "ollama"
 
     def _set_model_and_params(self):
         """Set model name and default parameters based on provider."""
@@ -55,9 +60,17 @@ class LLMConfig:
             self.advanced_model = "gemini/gemini-2.0-flash"
             self.temperature = 0.2
         elif self.provider == LLMProvider.OPENAI:
-            self.base_model = "gpt-4.1"
-            self.advanced_model = "gpt-4.1"
+            self.base_model = "gpt-4.1-mini"
+            self.advanced_model = "gpt-4.1-mini"
             self.temperature = 0.5
+        elif self.provider == LLMProvider.LOCAL:
+            local_model = os.getenv("LOCAL_LLM_MODEL", "llama3.1:70b-instruct-q4_K_M")
+            # litellm routes "ollama_chat/<name>" to the OpenAI-compatible Ollama endpoint
+            # configured via api_base (LOCAL_LLM_BASE_URL).
+            self.base_model = f"ollama_chat/{local_model}"
+            self.advanced_model = f"ollama_chat/{local_model}"
+            self.temperature = 0.3
+            self.api_base = os.getenv("LOCAL_LLM_BASE_URL", "http://localhost:11434")
 
 
 class QdrantConfig:

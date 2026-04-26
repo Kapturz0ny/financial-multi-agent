@@ -1,12 +1,16 @@
 from datetime import datetime
+import re
+import time as sleep_time
 
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 from markdown_it import MarkdownIt
 
+from src.auth import DAILY_QUERY_LIMIT, logout_button, record_usage, remaining, require_login, reset_today_usage
 from src.config import LLMProvider, get_default_provider
 from src.crews import CrewMode, StockAnalysisCrewFactory
+from src.llm_router import select_provider
 from src.tools.qdrant_tools import qdrant_service
 from src.utils.chart_builder import ChartBuilder
 from src.utils.pdf_exporter import PDFReportExporter
@@ -22,6 +26,9 @@ INTERVAL_MAPPING = [
     {"period": "5y", "interval": "1wk"},
     {"period": "max", "interval": "1wk"},
 ]
+
+RATE_LIMIT_WAIT_MS_PATTERN = re.compile(r"try again in\s+(\d+)ms", re.IGNORECASE)
+RATE_LIMIT_WAIT_S_PATTERN = re.compile(r"try again in\s+([0-9]+(?:\.[0-9]+)?)s", re.IGNORECASE)
 
 
 # Calculate basic metrics from the stock data
@@ -65,6 +72,43 @@ def load_stock_data(symbol: str, period: dict) -> pd.DataFrame:
     return ChartBuilder.load_and_process_data(symbol, period["period"])
 
 
+def is_rate_limit_error(message: object) -> bool:
+    if message is None:
+        return False
+    lowered = str(message).lower()
+    markers = (
+        "rate limit",
+        "rate_limit_exceeded",
+        "error code: 429",
+        "status code: 429",
+        "http 429",
+        "tokens per min",
+        "too many requests",
+    )
+    return any(marker in lowered for marker in markers)
+
+
+def retry_delay_seconds(message: object, default_seconds: float = 2.0) -> float:
+    if message is None:
+        return default_seconds
+
+    text = str(message)
+
+    match = RATE_LIMIT_WAIT_MS_PATTERN.search(text)
+    if match:
+        delay = int(match.group(1)) / 1000.0
+        # Add a small safety buffer to avoid immediate re-throttle.
+        return max(0.5, min(20.0, delay + 0.35))
+
+    match = RATE_LIMIT_WAIT_S_PATTERN.search(text)
+    if match:
+        delay = float(match.group(1))
+        # Add a small safety buffer to avoid immediate re-throttle.
+        return max(0.5, min(20.0, delay + 0.35))
+
+    return default_seconds
+
+
 if "stock_fig" not in st.session_state:
     st.session_state.stock_fig = None
 if "stock_metrics" not in st.session_state:
@@ -85,21 +129,50 @@ if "report_context" not in st.session_state:
     st.session_state.report_context = None
 if "report_evidence" not in st.session_state:
     st.session_state.report_evidence = None
+if "fallback_active" not in st.session_state:
+    st.session_state.fallback_active = False
+if "fallback_reason" not in st.session_state:
+    st.session_state.fallback_reason = None
+if "last_effective_provider" not in st.session_state:
+    st.session_state.last_effective_provider = None
 
 st.set_page_config("Stock Investment Report", layout="wide")
 st.title("📈 Stock Investment Analysis Platform")
 
+current_user = require_login()
+username = current_user["username"]
 
 st.sidebar.header("Configuration")
+st.sidebar.markdown(f"👤 Zalogowano jako **{current_user.get('name') or username}**")
+
+remaining_today = remaining(username)
+if username == "demo":
+    if st.sidebar.button("Resetuj limit Demo (dzisiaj)", width='stretch'):
+        removed_rows = reset_today_usage(username)
+        remaining_today = remaining(username)
+        st.sidebar.success(f"Zresetowano dzienny limit Demo. Usunięte wpisy: {removed_rows}.")
+
+st.sidebar.info(f"Pozostało zapytań dziś: {remaining_today}/{DAILY_QUERY_LIMIT}")
+logout_button(location="sidebar")
+st.sidebar.divider()
 ticker = st.sidebar.text_input("Stock symbol (eg. AAPL)")
 time_period = st.sidebar.selectbox("Time period", [period["period"] for period in INTERVAL_MAPPING])
 chart_type = st.sidebar.selectbox("Chart Type", ["Candlestick", "Line"])
 
+_provider_labels = {
+    LLMProvider.GEMINI.value: "Gemini",
+    LLMProvider.OPENAI.value: "OpenAI",
+    LLMProvider.LOCAL.value: "Local Llama (Ollama)",
+}
+_provider_options = [p.value for p in LLMProvider]
+_default_provider_value = get_default_provider().lower()
+_default_index = _provider_options.index(_default_provider_value) if _default_provider_value in _provider_options else 0
+
 llm_provider = st.sidebar.selectbox(
     "LLM Provider",
-    options=[provider.value for provider in LLMProvider],
-    index=0 if get_default_provider().lower() == "gemini" else 1,
-    format_func=lambda x: "Gemini" if x == "gemini" else "OpenAI",
+    options=_provider_options,
+    index=_default_index,
+    format_func=lambda x: _provider_labels.get(x, x),
 )
 
 crew_mode = st.sidebar.radio(
@@ -107,12 +180,14 @@ crew_mode = st.sidebar.radio(
     options=[
         CrewMode.SEQUENTIAL.value,
         CrewMode.PARALLEL.value,
+        CrewMode.CONCURRENT.value,
         CrewMode.GROUP_CHAT_V0.value,
         CrewMode.GROUP_CHAT_V1.value
     ],
     format_func=lambda x: {
         CrewMode.SEQUENTIAL.value: "Sequential",
         CrewMode.PARALLEL.value: "Parallel",
+        CrewMode.CONCURRENT.value: "Concurrent (Multi-round)",
         CrewMode.GROUP_CHAT_V0.value: "Group Chat (Original)",
         CrewMode.GROUP_CHAT_V1.value: "Group Chat (CS + RAG)"
     }.get(x, str(x)),
@@ -169,23 +244,101 @@ if sidebar_col1.button("Update", type="primary", width='stretch'):
 if sidebar_col2.button("Generate report", type="primary", width='stretch'):
     with st.spinner("Running multi-agent analysis…"):
         try:
-            crew = StockAnalysisCrewFactory.create(crew_mode, llm_provider)
-            result = crew.run(ticker)
+            effective_provider = select_provider(
+                username,
+                requested_provider=llm_provider,
+                fallback_state=st.session_state,
+            )
+            st.session_state.last_effective_provider = effective_provider
 
-            report_md = format_markdown(str(result["report"]))
-            report_cleaned = escape_markdown_specials(report_md)
-            st.session_state.report = report_cleaned
-            st.session_state.report_mode = result["mode"]
-            st.session_state.report_provider = result["provider"]
-            st.session_state.execution_time = result["execution_time"]
-            st.session_state.report_context = result.get("context_data")
+            max_attempts = 3 if effective_provider != LLMProvider.LOCAL.value else 1
+            result = None
+            current_error = None
 
-            if crew_mode == CrewMode.GROUP_CHAT_V1.value:
-                st.session_state.report_evidence = qdrant_service.get_all_evidence()
-            else:
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    crew = StockAnalysisCrewFactory.create(crew_mode, effective_provider)
+                    result = crew.run(ticker)
+                    current_error = result.get("error") if isinstance(result, dict) else None
+                except Exception as run_error:
+                    current_error = str(run_error)
+                    result = {"error": current_error}
+
+                if current_error and is_rate_limit_error(current_error) and attempt < max_attempts:
+                    delay_seconds = retry_delay_seconds(current_error)
+                    st.warning(
+                        f"Rate limit po stronie {effective_provider.upper()}. "
+                        f"Ponawiam automatycznie za {delay_seconds:.1f}s (próba {attempt + 1}/{max_attempts})."
+                    )
+                    sleep_time.sleep(delay_seconds)
+                    continue
+
+                break
+
+            if result is None:
+                raise RuntimeError("Analysis returned no result.")
+
+            if isinstance(result, dict) and result.get("error"):
+                if is_rate_limit_error(result["error"]):
+                    suggested_wait = retry_delay_seconds(result["error"])
+                    st.error(
+                        "Analysis Error: osiągnięto limit szybkości API (429). "
+                        f"Spróbuj ponownie za około {suggested_wait:.1f}s albo wybierz provider Local."
+                    )
+                    with st.expander("Szczegóły błędu 429", expanded=False):
+                        st.code(result["error"])
+                else:
+                    st.error(f"Analysis Error: {result['error']}")
+                st.session_state.report = None
+                st.session_state.report_context = None
                 st.session_state.report_evidence = None
+            else:
+                report_md = format_markdown(str(result["report"]))
+                report_cleaned = escape_markdown_specials(report_md)
+                st.session_state.report = report_cleaned
+                st.session_state.report_mode = result["mode"]
+                st.session_state.report_provider = result["provider"]
+                st.session_state.execution_time = result["execution_time"]
+                st.session_state.report_context = result.get("context_data")
+
+                if crew_mode in (CrewMode.GROUP_CHAT_V1.value, CrewMode.CONCURRENT.value):
+                    st.session_state.report_evidence = qdrant_service.get_all_evidence()
+                else:
+                    st.session_state.report_evidence = None
+
+                # Charge quota only after a successful analysis run.
+                record_usage(username, effective_provider, ticker=ticker, mode=crew_mode)
         except ValueError as e:
-            st.error(f"Configuration Error: {str(e)}\n\nPlease ensure API keys are set in your .env file.")
+            error_message = str(e)
+            key_error_markers = (
+                "api key",
+                "api_key",
+                "token",
+                "credential",
+                "openai",
+                "anthropic",
+                "groq",
+            )
+            if any(marker in error_message.lower() for marker in key_error_markers):
+                st.error(f"Configuration Error: {error_message}\n\nPlease ensure API keys are set in your .env file.")
+            else:
+                st.error(f"Configuration Error: {error_message}")
+        except Exception as e:
+            error_message = str(e)
+            if is_rate_limit_error(error_message):
+                suggested_wait = retry_delay_seconds(error_message)
+                st.error(
+                    "Analysis Error: osiągnięto limit szybkości API (429). "
+                    f"Spróbuj ponownie za około {suggested_wait:.1f}s albo wybierz provider Local."
+                )
+                with st.expander("Szczegóły błędu 429", expanded=False):
+                    st.code(error_message)
+            else:
+                st.error("Analysis failed and was not counted against your daily limit.")
+                st.exception(e)
+
+if st.session_state.get("fallback_active") and st.session_state.get("fallback_reason"):
+    st.warning(st.session_state["fallback_reason"])
 
 if st.session_state.stock_metrics is not None:
     last_close = st.session_state.stock_metrics["last_close"]
@@ -217,13 +370,14 @@ if st.session_state.report is not None:
         mode_labels = {
             CrewMode.SEQUENTIAL.value: "Sequential",
             CrewMode.PARALLEL.value: "Parallel",
+            CrewMode.CONCURRENT.value: "Concurrent (Multi-round)",
             CrewMode.GROUP_CHAT_V0.value: "Group Chat V0",
             CrewMode.GROUP_CHAT_V1.value: "Group Chat (CS + RAG)"
         }
         mode_label = mode_labels.get(st.session_state.report_mode, st.session_state.report_mode)
         st.metric("Analysis Mode", mode_label)
     with col2:
-        provider_label = "Gemini" if st.session_state.report_provider == "gemini" else "OpenAI"
+        provider_label = _provider_labels.get(st.session_state.report_provider, st.session_state.report_provider)
         st.metric("LLM Provider", provider_label)
     with col3:
         st.metric("Execution Time", f"{st.session_state.execution_time:.1f}s")

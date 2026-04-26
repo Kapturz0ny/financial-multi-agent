@@ -19,6 +19,8 @@ def create_researcher_agent(llm: LLM) -> Agent:
         verbose=True,
         memory=True,
         allow_code_execution=False,
+        max_iter=8,
+        max_execution_time=180,
     )
 
 
@@ -33,6 +35,8 @@ def create_technical_analyst_agent(llm: LLM) -> Agent:
         tools=[analyse_technical_indicators],
         llm=llm,
         allow_code_execution=False,
+        max_iter=8,
+        max_execution_time=180,
     )
 
 
@@ -47,6 +51,8 @@ def create_fundamental_analyst_agent(llm: LLM) -> Agent:
         tools=[analyse_fundamentals],
         llm=llm,
         allow_code_execution=False,
+        max_iter=8,
+        max_execution_time=180,
     )
 
 
@@ -60,6 +66,8 @@ def create_reporter_agent(llm: LLM) -> Agent:
         backstory="As a seasoned investment strategist with 20 years of experience, you weave complex financial data into compelling investment narratives.",
         llm=llm,
         allow_code_execution=False,
+        max_iter=8,
+        max_execution_time=180,
     )
 
 

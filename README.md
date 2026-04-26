@@ -124,7 +124,7 @@ The platform operates using a multi-agent system orchestrated by CrewAI with two
     ```
     Replace the placeholder values with your actual API keys.
     * **Reddit API Credentials:** Create an app on Reddit to get these https://www.reddit.com/prefs/apps. `REDDIT_CLIENT_ID` will be in the left top corner, `REDDIT_CLIENT_SECRET` will be next **secret** field, and `REDDIT_USER_AGENT` can be any string that describes your application.
-    * **LLM Provider:** Wybierz `gemini` lub `openai`. W aplikacji możesz zmienić providera z menu dropdown.
+    * **LLM Provider:** Select `gemini` or `openai`. In the application you can change the provider from the dropdown menu.
       - **Gemini:** Pobierz klucz z https://aistudio.google.com/app/apikey
       - **OpenAI:** Pobierz klucz z https://platform.openai.com/api-keys
 
