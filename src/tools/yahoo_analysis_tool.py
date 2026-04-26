@@ -3,6 +3,7 @@ import json
 from crewai.tools import tool
 
 from src.services.yahoo_analysis_fetcher import YahooAnalysisFetcher
+from src.tools.qdrant_tools import qdrant_service
 
 
 @tool
@@ -21,7 +22,22 @@ def fetch_yahoo_analysis(ticker: str) -> str:
     Returns:
         str: A JSON string containing different types of analyses.
     """
-    fetcher = YahooAnalysisFetcher(ticker)
-    analysis = fetcher.fetch_analysis()
+    try:
+        fetcher = YahooAnalysisFetcher(ticker)
+        analysis = fetcher.fetch_analysis()
 
-    return json.dumps(analysis, indent=2)
+        evidence_text = (
+            f"--- YAHOO FINANCIAL ANALYSIS FOR {ticker.upper()} ---\n\n"
+            f"ANALYSIS DATA:\n{str(analysis)}"
+        )
+        try:
+            qdrant_service.add_evidence(
+                text=evidence_text,
+                metadata={"source": "Yahoo Analysis", "symbol": ticker}
+            )
+        except Exception as q_err:
+            print(f"Warning: Failed to save to Qdrant: {q_err}")
+
+        return json.dumps(analysis, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, indent=2)

@@ -15,12 +15,12 @@ from src.crews.agents_definitions import (
 )
 from src.crews.tasks_definitions import TaskType, create_task
 from src.tools.context_storage_tools import (
-    add_claim_to_context,
-    add_fact_to_context,
+    add_claims_to_context,
+    add_facts_to_context,
     context_storage,
     read_current_context,
 )
-from src.tools.qdrant_tools import qdrant_service, query_session_evidence, store_session_evidence
+from src.tools.qdrant_tools import qdrant_service, query_session_evidence
 
 
 class GroupChatV1StockAnalysisCrew:
@@ -28,32 +28,41 @@ class GroupChatV1StockAnalysisCrew:
 
     def __init__(self, config: LLMConfig):
         self.config = config
-        llm_kwargs = {
+        base_llm_kwargs = {
+            "model": self.config.advanced_model,
+            "api_key": self.config.api_key,
+            "temperature": self.config.temperature,
+        }
+        advanced_llm_kwargs = {
             "model": self.config.advanced_model,
             "api_key": self.config.api_key,
             "temperature": self.config.temperature,
         }
         if self.config.provider == LLMProvider.LOCAL:
-            llm_kwargs["base_url"] = self.config.api_base
-        self.llm = LLM(**llm_kwargs)
+            base_llm_kwargs["base_url"] = self.config.api_base
+            advanced_llm_kwargs["base_url"] = self.config.api_base
+
+        self.base_llm = LLM(**base_llm_kwargs)
+        self.advanced_llm = LLM(**advanced_llm_kwargs)
+
         self._initialize_agents()
 
     def _initialize_agents(self):
-        """Initialize all 6 agents for group chat mode."""
+        """Initialize all agents for group chat mode."""
         # Original 3 specialist agents
-        self.researcher = create_researcher_agent(self.llm)
-        self.technical_analyst = create_technical_analyst_agent(self.llm)
-        self.fundamental_analyst = create_fundamental_analyst_agent(self.llm)
+        self.researcher = create_researcher_agent(self.base_llm)
+        self.technical_analyst = create_technical_analyst_agent(self.base_llm)
+        self.fundamental_analyst = create_fundamental_analyst_agent(self.base_llm)
 
         # Agents for debate
-        self.sceptic = create_sceptic_agent_v1(self.llm)
-        self.trust_agent = create_trust_agent_v1(self.llm)
+        self.sceptic = create_sceptic_agent_v1(self.base_llm)
+        self.trust_agent = create_trust_agent_v1(self.base_llm)
 
         # Reporter/Strategist agent with access to context storage for final synthesis
-        self.reporter = create_reporter_agent(self.llm)
+        self.reporter = create_reporter_agent(self.advanced_llm)
 
         # Leader agent to orchestrate the process
-        self.leader = create_leader_agent_v1(self.llm)
+        self.leader = create_leader_agent_v1(self.base_llm)
 
         def add_tools_to_agent(agent, tools_to_add):
             if agent.tools is None:
@@ -64,26 +73,14 @@ class GroupChatV1StockAnalysisCrew:
             else:
                 agent.tools.append(tools_to_add)
 
-        ctx_tools = [read_current_context, add_fact_to_context, add_claim_to_context]
 
-        context_storage_agents = [
-            self.researcher,
-            self.technical_analyst,
-            self.fundamental_analyst,
-            self.sceptic,
-            self.trust_agent,
-            self.reporter,
-        ]
-        for agent in context_storage_agents:
-            add_tools_to_agent(agent, ctx_tools)
+        add_tools_to_agent(self.researcher, [add_facts_to_context, add_claims_to_context])
+        add_tools_to_agent(self.technical_analyst, [add_facts_to_context, add_claims_to_context])
+        add_tools_to_agent(self.fundamental_analyst, [add_facts_to_context, add_claims_to_context])
 
-        add_tools_to_agent(self.researcher, store_session_evidence)
-        add_tools_to_agent(self.technical_analyst, store_session_evidence)
-        add_tools_to_agent(self.fundamental_analyst, store_session_evidence)
-
-        add_tools_to_agent(self.sceptic, query_session_evidence)
-        add_tools_to_agent(self.trust_agent, query_session_evidence)
-        add_tools_to_agent(self.reporter, query_session_evidence)
+        add_tools_to_agent(self.sceptic, [query_session_evidence, read_current_context, add_claims_to_context])
+        add_tools_to_agent(self.trust_agent, [query_session_evidence, read_current_context, add_claims_to_context])
+        add_tools_to_agent(self.reporter, [query_session_evidence, read_current_context, add_claims_to_context])
 
     def run(self, stock_symbol: str) -> dict:
         """
@@ -104,54 +101,68 @@ class GroupChatV1StockAnalysisCrew:
         technical_task = create_task(TaskType.CS_TECHNICAL, self.technical_analyst)
         fundamental_task = create_task(TaskType.CS_FUNDAMENTAL, self.fundamental_analyst)
 
-        sceptic_task = create_task(TaskType.CS_SCEPTIC, self.sceptic)
-        trust_task = create_task(TaskType.CS_TRUST, self.trust_agent)
+        debate_task = create_task(TaskType.CS_DEBATE_ORCHESTRATION)
 
         reporting_task = create_task(TaskType.CS_REPORTING, self.reporter)
 
-        # synthesis_task = create_task(TaskType.SYNTHESIS, self.leader)
-
-        crew = Crew(
+        analysis_crew = Crew(
             agents=[
                 self.researcher,
                 self.technical_analyst,
                 self.fundamental_analyst,
-                self.sceptic,
-                self.reporter,
-                self.trust_agent,
             ],
             tasks=[
                 research_task,
                 technical_task,
                 fundamental_task,
-                sceptic_task,
-                trust_task,
-                # synthesis_task,
-                reporting_task,
             ],
-            manager_agent=self.leader,
-            process=Process.hierarchical,
-            verbose=True,
+            process=Process.sequential,
+            verbose=False,
             cache=True,
         )
 
+        debate_crew = Crew(
+            agents=[
+                self.sceptic,
+                self.trust_agent,
+            ],
+            tasks=[debate_task],
+            manager_agent=self.leader,
+            process=Process.hierarchical,
+            verbose=False,
+        )
+
+
         try:
-            result = crew.kickoff(inputs={"stock_symbol": stock_symbol.upper()})
+            # Perform analysis
+            analysis_crew.kickoff(inputs={"stock_symbol": stock_symbol.upper()})
+
+            # Debate
+            debate_crew.kickoff(inputs={"stock_symbol": stock_symbol.upper()})
+
+            # Finish with report
+            report = Crew(
+                agents=[self.reporter],
+                tasks=[reporting_task],
+                process=Process.sequential,
+                verbose=False,
+                cache=False,
+            ).kickoff(inputs={"stock_symbol": stock_symbol.upper()})
             execution_time = time() - start_time
 
             return {
-                "mode": "group_chat",
+                "mode": "group_chat_v1",
                 "provider": self.config.provider.value,
                 "execution_time": execution_time,
-                "report": str(result),
+                "report": str(report),
                 "context_data": context_storage.storage,
             }
         except Exception as e:
             execution_time = time() - start_time
             return {
-                "mode": "group_chat",
+                "mode": "group_chat_v1",
                 "provider": self.config.provider.value,
                 "execution_time": execution_time,
-                "report": f"Group Chat mode failed: {str(e)}. Recommend using Sequential mode.",
+                "report": f"Group Chat mode failed: {str(e)}. Recommend using other mode.",
                 "error": str(e),
             }

@@ -60,8 +60,8 @@ class LLMConfig:
             self.advanced_model = "gemini/gemini-2.0-flash"
             self.temperature = 0.2
         elif self.provider == LLMProvider.OPENAI:
-            self.base_model = "gpt-4.1-mini"
-            self.advanced_model = "gpt-4.1-mini"
+            self.base_model = "gpt-5.4-mini"
+            self.advanced_model = "gpt-5.4"
             self.temperature = 0.5
         elif self.provider == LLMProvider.LOCAL:
             local_model = os.getenv("LOCAL_LLM_MODEL", "llama3.1:70b-instruct-q4_K_M")

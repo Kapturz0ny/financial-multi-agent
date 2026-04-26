@@ -3,6 +3,7 @@ import json
 from crewai.tools import tool
 
 from src.services.yahoo_technical_analyser import YahooTechnicalAnalyser
+from src.tools.qdrant_tools import qdrant_service
 
 
 @tool
@@ -26,6 +27,20 @@ def analyse_technical_indicators(ticker: str, period: str = "1y") -> str:
 
         str: A JSON string containing the fetched technical indicators.
     """
-    analyser = YahooTechnicalAnalyser(ticker)
-    data: dict = analyser.get_technical_data(period=period)
-    return json.dumps(data, indent=2)
+    try:
+        analyser = YahooTechnicalAnalyser(ticker)
+        data: dict = analyser.get_technical_data(period=period)
+        evidence_text = (
+            f"--- YAHOO TECHNICAL INDICATORS FOR {ticker.upper()} (Period: {period}) ---\n\n"
+            f"TECHNICAL DATA:\n{str(data)}"
+        )
+        try:
+            qdrant_service.add_evidence(
+                text=evidence_text,
+                metadata={"source": "Yahoo Technicals", "symbol": ticker}
+            )
+        except Exception as q_err:
+            print(f"Warning: Failed to save to Qdrant: {q_err}")
+        return json.dumps(data, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, indent=2)

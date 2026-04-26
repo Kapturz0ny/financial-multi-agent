@@ -49,17 +49,6 @@ def add_technical_indicators(data: pd.DataFrame, indicators: dict) -> pd.DataFra
     return ChartBuilder.add_indicators(data, indicators)
 
 
-def format_markdown(text):
-    md = MarkdownIt()
-    tokens = md.parse(text)
-    formatted = ""
-    for token in tokens:
-        if token.type == "paragraph_open":
-            formatted += "\n\n"
-        formatted += token.content
-    return formatted.strip()
-
-
 def escape_markdown_specials(text: str) -> str:
     text = text.replace("$", r"\$")
     return text
@@ -293,9 +282,7 @@ if sidebar_col2.button("Generate report", type="primary", width='stretch'):
                 st.session_state.report_context = None
                 st.session_state.report_evidence = None
             else:
-                report_md = format_markdown(str(result["report"]))
-                report_cleaned = escape_markdown_specials(report_md)
-                st.session_state.report = report_cleaned
+                st.session_state.report = str(result["report"])
                 st.session_state.report_mode = result["mode"]
                 st.session_state.report_provider = result["provider"]
                 st.session_state.execution_time = result["execution_time"]
@@ -582,7 +569,8 @@ if st.session_state.report is not None:
                         st.divider()
 
     st.divider()
-    st.markdown(st.session_state.report)
+    display_text = escape_markdown_specials(st.session_state.report)
+    st.markdown(display_text)
 
 
 if not st.session_state.get("stock_fig") and not st.session_state.get("report"):

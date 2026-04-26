@@ -25,7 +25,7 @@ class TaskType(Enum):
     CS_REPORTING = "cs_reporting"
     CS_SCEPTIC = "cs_sceptic"
     CS_TRUST = "cs_trust"
-    CS_SYNTHESIS = "cs_synthesis"
+    CS_DEBATE_ORCHESTRATION = "cs_debate_orchestartion"
 
     # Concurrent architecture - Round 2 cross-awareness refine tasks
     CONCURRENT_RESEARCH_REFINE = "concurrent_research_refine"
@@ -150,100 +150,87 @@ TASK_CONFIGS = {
             "fundamental analysis, risk assessment, convergences/divergences, catalysts, and final recommendation."
         ),
     },
-    TaskType.CS_SCEPTIC: {
-        "description": (
-            "Act as devil's advocate for '{stock_symbol}' in an ongoing, multi-round debate. "
-            "1. FIRST, 'Read Current Context' to review the latest entries, paying special attention to recent claims made by the Trust Builder or Analysts.\n"
-            "2. Use `query_session_evidence` to search the vector database for raw source texts to scrutinize.\n"
-            "3. Formulate highly targeted counter-arguments to the specific claims you just read.\n"
-            "4. Use 'Add Claim to Context' with `agent_name` 'Devil's Advocate - Sceptic'.\n"
-            "5. CRITICAL: You MUST link your counter-argument to the specific entry you are attacking by putting its ID in the `refutes_id` field. "
-            "Example: claims=[{{'content': 'Trust agent is wrong, debt is actually short-term', 'refutes_id': 'claim_123'}}].\n"
-            "Limit to MAX 1 or 2 claims per turn to allow for a dynamic back-and-forth debate. DO NOT put IDs in the content text."
-        ),
-        "expected_output": "SUCCESS: Sceptic debate turn completed and saved to Context Storage.",
-    },
-    TaskType.CS_TRUST: {
-        "description": (
-            "Verify data for '{stock_symbol}' in an ongoing, multi-round debate. "
-            "1. FIRST, 'Read Current Context' to find the latest entries, especially the recent attacks made by the Sceptic.\n"
-            "2. Use `query_session_evidence` to pull raw source text to cross-check the Sceptic's claims or the original facts.\n"
-            "3. Formulate verifications or corrections based on the evidence.\n"
-            "4. Use 'Add Claim to Context' with `agent_name` 'Data Verification Specialist - Trust Builder'.\n"
-            "5. CRITICAL: You MUST link your verification/correction to the specific entry you are addressing using the `refutes_id` field INSIDE the claim object. "
-            "Example: claims=[{{'content': 'Sceptic concern is invalid; Q3 report shows high liquidity', 'refutes_id': 'claim_456'}}].\n"
-            "Limit to MAX 1 or 2 claims per turn to allow for a dynamic back-and-forth debate. DO NOT put IDs in the content text."
-        ),
-        "expected_output": "SUCCESS: Trust debate turn completed and saved to Context Storage.",
-    },
-    TaskType.CS_SYNTHESIS: {
-        "description": (
-            "Orchestrate the '{stock_symbol}' analysis process: "
-            "1. Direct Researcher, Technical, and Fundamental analysts to populate Context Storage. "
-            "2. Once done, direct Sceptic to challenge assumptions and Trust to verify data integrity. "
-            "3. Ensure all agents contributed. Task is complete when this full cycle (analysis -> critique -> verification) is documented in storage."
-        ),
-        "expected_output": "Orchestration complete. All data verified in Context Storage.",
-    },
     TaskType.CS_RESEARCH: {
         "description": (
-            "Analyze sentiment for '{stock_symbol}'. "
-            "Tools: `analyse_finnhub_sentiment`, `analyse_alphavantage_sentiment`, `fetch_yahoo_news`, `fetch_yahoo_analysis`. "
-            "CRITICAL: Batch results. Use 'Add Fact to Context' for data and 'Add Claim to Context' for insights. "
-            "Set `agent_name` to 'Senior Stock Market Researcher'. "
-            "AFTER saving to Context Storage, extract the generated IDs from the success message and use `store_session_evidence` to save the raw article texts/data as proof for each ID. "
-            "MAX 5 facts, 3 claims. Ultra-concise style. DO NOT summarize in final answer."
+            "Analyze sentiment and news for '{stock_symbol}' using Finnhub, AlphaVantage, and Yahoo tools. "
+            "YOU MUST STRICTLY FOLLOW THIS EXACT 3-STEP WORKFLOW:\n"
+            "STEP 1: Fetch news and financial analyses.\n"
+            "STEP 2: Use 'add_facts_to_context' to save the hard data (at least 5 facts). Set `agent_name` to 'Senior Stock Market Researcher'.\n"
+            "STEP 3: Use 'add_claims_to_context' to save your qualitative insights (at least 2 claims). Summarize impactful news and consensus.\n"
+            "CRITICAL: Do not skip any steps. Do not summarize in the final answer, just confirm completion."
         ),
-        "expected_output": "SUCCESS: Sentiment and research data gathered and saved to Context Storage.",
+        "expected_output": "SUCCESS: Facts and Claims added.",
     },
     TaskType.CS_TECHNICAL: {
         "description": (
-            "Technical analysis for '{stock_symbol}' using `analyse_technical_indicators`. "
-            "Interpret trends and signals. Batch results. "
-            "Set `agent_name` to 'Expert Technical Analyst'. "
-            "AFTER saving to Context Storage, extract the generated IDs from the success message and use `store_session_evidence` to save the raw indicator data as proof for each ID. "
-            "MAX 5 facts, 3 claims. Ultra-concise style. DO NOT summarize in final answer."
+            "Perform technical analysis on '{stock_symbol}' using `analyse_technical_indicators_tool`. "
+            "YOU MUST STRICTLY FOLLOW THIS EXACT 3-STEP WORKFLOW:\n"
+            "STEP 1: Fetch technical indicators.\n"
+            "STEP 2: Use 'add_facts_to_context' to save the raw metrics (e.g., exact RSI, SMA values). Set `agent_name` to 'Expert Technical Analyst'. At least 5 facts.\n"
+            "STEP 3: Use 'add_claims_to_context' to save your interpretations (e.g., 'RSI at 70 suggests overbought'). At least 2 claims.\n"
+            "CRITICAL: Do not skip any steps. Do not summarize in the final answer, just confirm completion."
         ),
-        "expected_output": "SUCCESS: Technical analysis completed and saved to Context Storage.",
+        "expected_output": "SUCCESS: Facts and Claims added.",
     },
     TaskType.CS_FUNDAMENTAL: {
         "description": (
-            "Fundamental analysis for '{stock_symbol}' using `analyse_fundamentals`. "
-            "Assess health and valuation. Batch results. "
-            "Set `agent_name` to 'Senior Fundamental Analyst'. "
-            "AFTER saving to Context Storage, extract the generated IDs from the success message and use `store_session_evidence` to save the raw financial statements/data as proof for each ID. "
-            "MAX 5 facts, 3 claims. Ultra-concise style. DO NOT summarize in final answer."
+            "Conduct fundamental analysis on '{stock_symbol}' using `analyse_fundamentals_tool`. "
+            "YOU MUST STRICTLY FOLLOW THIS EXACT 3-STEP WORKFLOW:\n"
+            "STEP 1: Fetch financial statements and metrics.\n"
+            "STEP 2: Use 'add_facts_to_context' to save the financial data (e.g., P/E, ROE). Set `agent_name` to 'Senior Fundamental Analyst'. At least 5 facts.\n"
+            "STEP 3: Use 'add_claims_to_context' to save your valuation assessment (overvalued/undervalued). At least 2 claims.\n"
+            "CRITICAL: Do not skip any steps. Do not summarize in the final answer, just confirm completion."
         ),
-        "expected_output": "SUCCESS: Fundamental analysis completed and saved to Context Storage.",
+        "expected_output": "SUCCESS: Facts and Claims added.",
     },
     TaskType.CS_REPORTING: {
         "description": (
-            "Synthesize all data for '{stock_symbol}' from Context Storage into a definitive investment report. "
-            "CRITICAL RULES:\n"
-            "1. DO NOT include raw IDs (like 'fact_123' or 'claim_456') inside the report narrative. Use them only internally to resolve conflicts.\n"
-            "2. Cite sources by their professional names (e.g., 'Yahoo Finance', 'Analyst Consensus', 'Technical Indicators') instead of JSON IDs.\n"
-            "3. Actively resolve conflicts: if a Sceptic refuted a claim (via refutes_id), you must explain why you chose one side or how you balanced the risk.\n"
-            "4. Use `query_session_evidence` to retrieve raw source texts from the vector database if you need deeper context to resolve conflicts or write the narrative.\n"
-            "5. Ensure the report is a professional narrative, not a list of data points."
+            "Synthesize all data for '{stock_symbol}' into a definitive, institutional-grade investment report. "
+            "WORKFLOW:\n"
+            "1. Use 'read_current_context' to load all facts and claims from the debate.\n"
+            "2. If you need deeper context or raw data, use 'query_session_evidence' to search the Vector DB.\n"
+            "3. Write the report following these editorial guidelines:\n\n"
+            "- TONE & STYLE: Write in a highly professional, academic financial tone. Use advanced market terminology and well-structured, comprehensive, long sentences.\n"
+            "- DATA DENSITY: Base your analysis on hard quantitative data. Include exact numbers, percentages (%), dollar amounts ($), dates, and specific financial metrics (e.g., P/E, ROE, RSI, MACD).\n"
+            "- CITATIONS: Explicitly attribute data to its origin using phrases like 'according to', 'source:', or 'analysts estimate'.\n"
+            "- OBJECTIVITY & SENTIMENT: Maintain strict analytical neutrality. You must equally evaluate the bull case (highlighting growth, strong profits, upside, momentum, robust gains, and opportunities to outperform) against the bear case (highlighting risks of decline, weak performance, volatility, downside threats, losses, and concerns).\n"
+            "- CONFLICT RESOLUTION: Explicitly address the Sceptic/Trust debate from the context and explain your final judgment.\n"
+            "- NO RAW IDs: Write for a human executive. Never include JSON IDs (like 'fact_123') in the final text."
         ),
         "expected_output": (
-            "A professional Markdown (##) report for '{stock_symbol}' containing EXACTLY these sections:\n\n"
-            "## 1. Executive Summary\n"
-            "Thesis (Buy/Sell/Hold), Price Target, Time Horizon, and top 3 reasons.\n\n"
-            "## 2. Market Sentiment & News Landscape\n"
-            "- **Sentiment Drivers**: What is currently moving the stock's social/market perception.\n"
-            "- **Impactful News**: Summary of the most recent critical news articles and their implications.\n"
-            "- **Analyst Consensus**: Detailed view of ratings, earnings estimates, and price targets.\n\n"
-            "## 3. Technical Analysis\n"
-            "Detailed interpretation of trends, specific indicator alignments (RSI, MACD, SMA), and key support/resistance levels.\n\n"
-            "## 4. Fundamental Analysis\n"
-            "Assessment of financial health (margins, ROE, debt), valuation ratios (P/E, PEG), and growth prospects.\n\n"
-            "## 5. Convergences & Divergences\n"
-            "Explicit resolution of conflicts. Address where technicals and fundamentals disagree and how Sceptic/Trust flags were handled.\n\n"
-            "## 6. Risk Assessment & Catalysts\n"
-            "Detailed risks identified by the Sceptic and primary upcoming drivers (catalysts).\n\n"
-            "## 7. Final Recommendation\n"
-            "Actionable, well-reasoned conclusion with a professional investment outlook."
+            "A comprehensive, highly actionable Markdown report for '{stock_symbol}'. You MUST use EXACTLY these 8 main section headers (##):\n\n"
+            "## Executive Summary\n"
+            "## Sentiment Analysis\n"
+            "## Technical Analysis\n"
+            "## Fundamental Analysis\n"
+            "## Convergences/Divergences\n"
+            "## Risk Assessment\n"
+            "## Catalysts\n"
+            "## Final Recommendation\n\n"
+            "FORMATTING & STRUCTURAL RULES:\n"
+            "- PARAGRAPHS & DEPTH: Write comprehensively. Break your analysis into multiple distinct, well-developed paragraphs within each section.\n"
+            "- SUB-HEADERS: Frequently use Markdown sub-headers (###) or bold inline headers (**Topic:**) to organize complex data and metrics.\n"
+            "- VALUATION FOCUS: Discuss the stock's 'fair value' and analyst 'price targets' or 'target price' across multiple sections (e.g., in Fundamental Analysis and Executive Summary), not just at the end.\n"
+            "- FINAL VERDICT: In the Final Recommendation, you MUST explicitly state a clear action ('Buy', 'Sell', or 'Hold'), a specific 'Price Target', and a 'Time Horizon' (e.g., '12-month')."
+        ),
+    },
+    TaskType.CS_DEBATE_ORCHESTRATION: {
+        "description": (
+            "Orchestrate a rigorous, multi-round debate about '{stock_symbol}'. "
+            "YOU MUST FOLLOW THIS EXACT PROTOCOL FOR 3 ROUNDS:\n\n"
+            "ROUND X START:\n"
+            "1. Delegate to 'Sceptic': Instruct them to use 'read_current_context', find weaknesses in the analysts' claims, and use 'add_claims_to_context' to attack them. Tell Sceptic they MUST use the `refutes_id` field pointing to the claim they are attacking.\n"
+            "2. Wait for Sceptic to finish.\n"
+            "3. Delegate to 'Trust-Builder': Instruct them to use 'read_current_context' to find the Sceptic's new attacks. Tell Trust-Builder they MUST use 'add_claims_to_context' to defend the data, and they ABSOLUTELY MUST set the `refutes_id` field to the ID of the Sceptic's claim they are replying to.\n"
+            "4. Wait for Trust-Builder to finish.\n"
+            "ROUND X END.\n\n"
+            "Repeat this for exactly 3 rounds. Do not stop early."
+        ),
+        "expected_output": (
+            "A detailed log of the 3 rounds. Format:\n"
+            "Round 1: Sceptic attacked [IDs], Trust defended [IDs].\n"
+            "Round 2: ...\n"
+            "Round 3: ..."
         ),
     },
     TaskType.CONCURRENT_RESEARCH_REFINE: {
@@ -292,7 +279,7 @@ TASK_CONFIGS = {
 
 def create_task(
     task_type: TaskType,
-    agent: Agent,
+    agent: Optional[Agent] = None,
     context: Optional[list[Task]] = None,
     async_execution: bool = False,
 ) -> Task:

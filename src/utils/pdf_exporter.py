@@ -1,5 +1,6 @@
 """PDF export utilities for stock analysis reports."""
 
+import re
 from datetime import datetime
 from io import BytesIO
 
@@ -183,12 +184,25 @@ class PDFReportExporter:
         story.append(Paragraph("Investment Analysis Report", self.styles["Heading1"]))
         story.append(Spacer(1, 0.15 * inch))
 
-        report_lines = report_text.split("\n")
-        for line in report_lines:
-            if line.strip():
-                if line.startswith("**") and line.endswith("**"):
-                    text = line.replace("**", "")
-                    story.append(Paragraph(f"<b>{text}</b>", self.styles["Normal"]))
-                else:
-                    story.append(Paragraph(line, self.styles["Normal"]))
-            story.append(Spacer(1, 0.05 * inch))
+        cleaned_text = report_text
+        cleaned_text = re.sub(r'^##\s+(.+)$', r'<font size="16"><b>\1</b></font><br/>', cleaned_text, flags=re.MULTILINE)
+        cleaned_text = re.sub(r'^###\s+(.+)$', r'<font size="14"><b>\1</b></font><br/>', cleaned_text, flags=re.MULTILINE)
+        cleaned_text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', cleaned_text)
+        cleaned_text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', cleaned_text)
+
+        paragraphs = cleaned_text.split('\n\n')
+
+        for p_text in paragraphs:
+            p_text = p_text.strip()
+            if not p_text:
+                continue
+
+            p_text = p_text.replace('\n', '<br/>')
+
+            try:
+                story.append(Paragraph(p_text, self.styles["Normal"]))
+                story.append(Spacer(1, 0.1 * inch))
+            except Exception as _:
+                safe_text = p_text.replace('<', '&lt;').replace('>', '&gt;')
+                story.append(Paragraph(safe_text, self.styles["Normal"]))
+                story.append(Spacer(1, 0.1 * inch))

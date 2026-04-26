@@ -90,7 +90,6 @@ class QdrantService:
             for record in records:
                 payload = record.payload or {}
                 evidence_list.append({
-                    "context_id": payload.get("context_id", "Unknown"),
                     "source": payload.get("source", "Unknown"),
                     "content": payload.get("document", "")
                 })
