@@ -1,11 +1,10 @@
-from datetime import datetime
 import re
 import time as sleep_time
+from datetime import datetime
 
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-from markdown_it import MarkdownIt
 
 from src.auth import DAILY_QUERY_LIMIT, logout_button, record_usage, remaining, require_login, reset_today_usage
 from src.config import LLMProvider, get_default_provider
