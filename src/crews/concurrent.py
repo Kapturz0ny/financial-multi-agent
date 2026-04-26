@@ -1,5 +1,5 @@
-from time import time
 from concurrent.futures import ThreadPoolExecutor
+from time import time
 
 from crewai import LLM, Crew
 
@@ -12,8 +12,8 @@ from src.crews.agents_definitions import (
 )
 from src.crews.tasks_definitions import TaskType, create_task
 from src.tools.context_storage_tools import (
-    add_claim_to_context,
-    add_fact_to_context,
+    add_claims_to_context,
+    add_facts_to_context,
     context_storage,
     read_current_context,
 )
@@ -63,7 +63,7 @@ class ConcurrentStockAnalysisCrew:
             else:
                 agent.tools.append(tools_to_add)
 
-        ctx_tools = [read_current_context, add_fact_to_context, add_claim_to_context]
+        ctx_tools = [read_current_context, add_facts_to_context, add_claims_to_context]
         for agent in (self.researcher, self.technical_analyst, self.fundamental_analyst, self.reporter):
             add_tools_to_agent(agent, ctx_tools)
 
