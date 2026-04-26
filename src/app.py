@@ -172,9 +172,8 @@ if sidebar_col2.button("Generate report", type="primary", width='stretch'):
             crew = StockAnalysisCrewFactory.create(crew_mode, llm_provider)
             result = crew.run(ticker)
 
-            report_md = format_markdown(str(result["report"]))
-            report_cleaned = escape_markdown_specials(report_md)
-            st.session_state.report = report_cleaned
+            raw_report = str(result["report"])
+            st.session_state.report = raw_report
             st.session_state.report_mode = result["mode"]
             st.session_state.report_provider = result["provider"]
             st.session_state.execution_time = result["execution_time"]
@@ -428,7 +427,8 @@ if st.session_state.report is not None:
                         st.divider()
 
     st.divider()
-    st.markdown(st.session_state.report)
+    display_text = escape_markdown_specials(st.session_state.report)
+    st.markdown(display_text)
 
 
 if not st.session_state.get("stock_fig") and not st.session_state.get("report"):
