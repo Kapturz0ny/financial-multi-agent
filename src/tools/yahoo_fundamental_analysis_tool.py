@@ -3,6 +3,7 @@ import json
 from crewai.tools import tool
 
 from src.services.yahoo_fundamental_analyser import YahooFundamentalAnalyser
+from src.tools.qdrant_tools import qdrant_service
 
 
 @tool
@@ -31,7 +32,22 @@ def analyse_fundamentals(ticker: str) -> str:
     Returns:
         str: A JSON string containing the fetched profile data.
     """
-    fetcher = YahooFundamentalAnalyser(ticker)
-    analysis = fetcher.fetch_fundamentals()
+    try:
+        fetcher = YahooFundamentalAnalyser(ticker)
+        analysis = fetcher.fetch_fundamentals()
 
-    return json.dumps(analysis, indent=2)
+        evidence_text = (
+            f"--- YAHOO FUNDAMENTALS FOR {ticker.upper()} ---\n\n"
+            f"FUNDAMENTAL DATA:\n{str(analysis)}"
+        )
+        try:
+            qdrant_service.add_evidence(
+                text=evidence_text,
+                metadata={"source": "Yahoo Fundamentals", "symbol": ticker}
+            )
+        except Exception as q_err:
+            print(f"Warning: Failed to save to Qdrant: {q_err}")
+
+        return json.dumps(analysis, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, indent=2)

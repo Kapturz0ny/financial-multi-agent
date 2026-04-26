@@ -3,6 +3,7 @@ import json
 from crewai.tools import tool
 
 from src.services.alphavantage.alphavantage_client import AlphaVantageClient
+from src.tools.qdrant_tools import qdrant_service
 
 client = AlphaVantageClient()
 
@@ -63,13 +64,31 @@ def analyse_alphavantage_sentiment(
         # Get earnings data
         earnings_data = client.get_earnings(stock_symbol)
 
+        summary_data = client.get_market_sentiment_summary(stock_symbol)
+
         # Combine all data
         result = {
             'sentiment_analysis': sentiment_data,
             'company_overview': company_data,
             'earnings': earnings_data,
-            'summary': client.get_market_sentiment_summary(stock_symbol)
+            'summary': summary_data
         }
+
+        evidence_text = (
+            f"--- ALPHAVANTAGE ANALYSIS FOR {stock_symbol.upper()} ---\n\n"
+            f"SENTIMENT DATA:\n{str(sentiment_data)}\n\n"
+            f"COMPANY OVERVIEW:\n{str(company_data)}\n\n"
+            f"EARNINGS DATA:\n{str(earnings_data)}\n\n"
+            f"MARKET SUMMARY:\n{str(summary_data)}"
+        )
+
+        try:
+            qdrant_service.add_evidence(
+                text=evidence_text,
+                metadata={"source": "AlphaVantage Sentiment & Overview"}
+            )
+        except Exception as q_err:
+            print(f"Warning: Failed to save to Qdrant: {q_err}")
 
         return json.dumps(result, indent=2)
 
@@ -113,6 +132,20 @@ def get_company_fundamentals_alpha(stock_symbol: str) -> str:
     """
     try:
         company_data = client.get_company_overview(stock_symbol)
+
+        evidence_text = (
+            f"--- ALPHAVANTAGE FUNDAMENTALS FOR {stock_symbol.upper()} ---\n\n"
+            f"COMPANY DATA:\n{str(company_data)}"
+        )
+
+        try:
+            qdrant_service.add_evidence(
+                text=evidence_text,
+                metadata={"source": "AlphaVantage Fundamentals", "symbol": stock_symbol}
+            )
+        except Exception as q_err:
+            print(f"Warning: Failed to save to Qdrant: {q_err}")
+
         return json.dumps(company_data, indent=2)
     except Exception as e:
         error_response = {

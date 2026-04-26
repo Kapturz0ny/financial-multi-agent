@@ -3,6 +3,7 @@ import json
 from crewai.tools import tool
 
 from src.services.finnhub.finnhub_sentiment import FinnhubSentimentAnalyser
+from src.tools.qdrant_tools import qdrant_service
 
 analyser = FinnhubSentimentAnalyser()
 
@@ -59,6 +60,19 @@ def analyse_finnhub_sentiment(
             days_back=days_back,
             news_count=news_count
         )
+
+        evidence_text = (
+            f"--- FINNHUB SENTIMENT ANALYSIS FOR {stock_symbol.upper()} ---\n\n"
+            f"SENTIMENT DATA:\n{str(sentiment_data)}"
+        )
+        try:
+            qdrant_service.add_evidence(
+                text=evidence_text,
+                metadata={"source": "Finnhub Sentiment", "symbol": stock_symbol}
+            )
+        except Exception as q_err:
+            print(f"Warning: Failed to save to Qdrant: {q_err}")
+
         return json.dumps(sentiment_data, indent=2)
     except Exception as e:
         error_response = {
