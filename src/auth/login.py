@@ -19,8 +19,8 @@ def _load_config() -> dict:
     path = Path(AUTH_CREDENTIALS_PATH)
     if not path.exists():
         st.error(
-            f"Brakuje pliku z poświadczeniami: {path}. "
-            f"Skopiuj `src/auth/credentials.example.yaml` do `{path}` i ustaw hasła."
+            f"Missing credentials file: {path}. "
+            f"Copy `src/auth/credentials.example.yaml` to `{path}` and set passwords."
         )
         st.stop()
     with path.open("r", encoding="utf-8") as f:
@@ -52,15 +52,15 @@ def require_login() -> dict:
     try:
         authenticator.login(location="main")
     except Exception as e:
-        st.error(f"Błąd logowania: {e}")
+        st.error(f"Login error: {e}")
         st.stop()
 
     auth_status = st.session_state.get("authentication_status")
     if auth_status is False:
-        st.error("Nieprawidłowa nazwa użytkownika lub hasło.")
+        st.error("Invalid username or password.")
         st.stop()
     if auth_status is None:
-        st.warning("Zaloguj się, aby korzystać z platformy.")
+        st.warning("Please log in to use the platform.")
         st.stop()
 
     return {

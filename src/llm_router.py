@@ -42,8 +42,8 @@ def select_provider(
         if fallback_state is not None:
             fallback_state["fallback_active"] = True
             fallback_state["fallback_reason"] = (
-                "Wyczerpano dzienny limit zapytań do zewnętrznych modeli — "
-                "używam lokalnego modelu Llama jako fallback."
+                "Daily query limit for external models has been reached - "
+                "switching to the Local Llama (Ollama) provider as fallback."
             )
         return LOCAL_PROVIDER
 

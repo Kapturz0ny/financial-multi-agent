@@ -143,16 +143,16 @@ current_user = require_login()
 username = current_user["username"]
 
 st.sidebar.header("Configuration")
-st.sidebar.markdown(f"👤 Zalogowano jako **{current_user.get('name') or username}**")
+st.sidebar.markdown(f"👤 Logged in as **{current_user.get('name') or username}**")
 
 remaining_today = remaining(username)
 if username == "demo":
-    if st.sidebar.button("Resetuj limit Demo (dzisiaj)", width='stretch'):
+    if st.sidebar.button("Reset Demo Limit (Today)", width='stretch'):
         removed_rows = reset_today_usage(username)
         remaining_today = remaining(username)
-        st.sidebar.success(f"Zresetowano dzienny limit Demo. Usunięte wpisy: {removed_rows}.")
+        st.sidebar.success(f"Demo daily limit reset. Removed entries: {removed_rows}.")
 
-st.sidebar.info(f"Pozostało zapytań dziś: {remaining_today}/{DAILY_QUERY_LIMIT}")
+st.sidebar.info(f"Queries remaining today: {remaining_today}/{DAILY_QUERY_LIMIT}")
 logout_button(location="sidebar")
 st.sidebar.divider()
 ticker = st.sidebar.text_input("Stock symbol (eg. AAPL)")
@@ -267,8 +267,8 @@ if sidebar_col2.button("Generate report", type="primary", width='stretch'):
                 if current_error and is_rate_limit_error(current_error) and attempt < max_attempts:
                     delay_seconds = retry_delay_seconds(current_error)
                     st.warning(
-                        f"Rate limit po stronie {effective_provider.upper()}. "
-                        f"Ponawiam automatycznie za {delay_seconds:.1f}s (próba {attempt + 1}/{max_attempts})."
+                        f"Rate limit from {effective_provider.upper()}. "
+                        f"Retrying automatically in {delay_seconds:.1f}s (attempt {attempt + 1}/{max_attempts})."
                     )
                     sleep_time.sleep(delay_seconds)
                     continue
@@ -282,10 +282,10 @@ if sidebar_col2.button("Generate report", type="primary", width='stretch'):
                 if is_rate_limit_error(result["error"]):
                     suggested_wait = retry_delay_seconds(result["error"])
                     st.error(
-                        "Analysis Error: osiągnięto limit szybkości API (429). "
-                        f"Spróbuj ponownie za około {suggested_wait:.1f}s albo wybierz provider Local."
+                        "Analysis Error: API rate limit reached (429). "
+                        f"Try again in about {suggested_wait:.1f}s or choose the Local Llama (Ollama) provider."
                     )
-                    with st.expander("Szczegóły błędu 429", expanded=False):
+                    with st.expander("429 Error Details", expanded=False):
                         st.code(result["error"])
                 else:
                     st.error(f"Analysis Error: {result['error']}")
@@ -328,10 +328,10 @@ if sidebar_col2.button("Generate report", type="primary", width='stretch'):
             if is_rate_limit_error(error_message):
                 suggested_wait = retry_delay_seconds(error_message)
                 st.error(
-                    "Analysis Error: osiągnięto limit szybkości API (429). "
-                    f"Spróbuj ponownie za około {suggested_wait:.1f}s albo wybierz provider Local."
+                    "Analysis Error: API rate limit reached (429). "
+                    f"Try again in about {suggested_wait:.1f}s or choose the Local Llama (Ollama) provider."
                 )
-                with st.expander("Szczegóły błędu 429", expanded=False):
+                with st.expander("429 Error Details", expanded=False):
                     st.code(error_message)
             else:
                 st.error("Analysis failed and was not counted against your daily limit.")
