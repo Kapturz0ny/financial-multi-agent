@@ -209,34 +209,6 @@ TASK_CONFIGS = {
             "- FINAL VERDICT: In the Final Recommendation, you MUST explicitly state a clear action ('Buy', 'Sell', or 'Hold'), a specific 'Price Target', and a 'Time Horizon' (e.g., '12-month')."
         ),
     },
-    TaskType.CS_SCEPTIC: {
-        "description": (
-            "Act as devil's advocate for '{stock_symbol}' in an ongoing, multi-round debate. "
-            "1. FIRST, 'Read Current Context' to review the latest facts and claims.\n"
-            "2. Use `query_session_evidence` to search the vector database for raw source texts.\n"
-            "3. Formulate highly targeted counter-arguments.\n"
-            "4. Use 'Add Claim to Context' with `agent_name` 'Sceptic'.\n"
-            "5. CRITICAL: Your claim MUST be grounded in data. In your claim's content, explicitly mention which facts support your skepticism. "
-            "You MUST link your counter-argument to the specific entry you are attacking by putting its ID in the `refutes_id` field. "
-            "Example: claims=[{{'content': 'Trust agent is wrong about liquidity. Based on fact_789 (declining cash flow), the company is at risk.', 'refutes_id': 'claim_123'}}].\n"
-            "Limit to 3 or 4 claims per turn."
-        ),
-        "expected_output": "Short summary of claims added. End with: Ready for the next round.",
-    },
-    TaskType.CS_TRUST: {
-        "description": (
-            "Verify data for '{stock_symbol}' in an ongoing, multi-round debate. "
-            "1. FIRST, 'Read Current Context' to find the latest attacks made by the Sceptic and the original facts.\n"
-            "2. Use `query_session_evidence` to pull raw source text to cross-check.\n"
-            "3. Formulate verifications or corrections based on HARD EVIDENCE.\n"
-            "4. Use 'Add Claim to Context' with `agent_name` 'Trust-Builder'.\n"
-            "5. CRITICAL: You MUST back up your defense using existing facts. Mention the supporting fact IDs in your text. "
-            "You MUST link your verification to the specific entry you are addressing using the `refutes_id` field. "
-            "Example: claims=[{{'content': 'Sceptic concern is invalid. fact_456 clearly shows a 20% increase in cash reserves, mitigating the risk.', 'refutes_id': 'claim_999'}}].\n"
-            "Limit to 3 or 4 claims per turn."
-        ),
-        "expected_output": "Short summary of claims added. End with: Ready for the next round.",
-    },
     TaskType.CS_DEBATE_ORCHESTRATION: {
         "description": (
             "Orchestrate a rigorous, multi-round debate about '{stock_symbol}'. "

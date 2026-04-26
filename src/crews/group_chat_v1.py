@@ -94,8 +94,6 @@ class GroupChatV1StockAnalysisCrew:
         technical_task = create_task(TaskType.CS_TECHNICAL, self.technical_analyst)
         fundamental_task = create_task(TaskType.CS_FUNDAMENTAL, self.fundamental_analyst)
 
-        # sceptic_task = create_task(TaskType.CS_SCEPTIC, self.sceptic)
-        # trust_task = create_task(TaskType.CS_TRUST, self.trust_agent)
         debate_task = create_task(TaskType.CS_DEBATE_ORCHESTRATION)
 
         reporting_task = create_task(TaskType.CS_REPORTING, self.reporter)
