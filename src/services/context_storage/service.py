@@ -1,5 +1,6 @@
 import json
 import os
+import threading
 import uuid
 from typing import Optional
 
@@ -28,6 +29,7 @@ class ContextStorage:
 
     def __init__(self, default_path: str = "current_context.json"):
         self.file_path = default_path
+        self._lock = threading.Lock()
 
     def initialize_session(self, stock_symbol: str):
         """
@@ -52,8 +54,9 @@ class ContextStorage:
 
     def _save_to_file(self, data: dict):
         """Save the data dictionary to the JSON file."""
-        with open(self.file_path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+        with self._lock:
+            with open(self.file_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
 
     def add_facts(self, agent_name: str, facts: list[FactEntry]) -> str:
         data = self._load_from_file()
