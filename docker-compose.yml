@@ -10,6 +10,7 @@ services:
       - ./.context:/app/.context
       - ./src:/app/src
       - ./data:/app/data
+      - ./tmp:/app/tmp
     networks:
       - analytics-network
     depends_on:
