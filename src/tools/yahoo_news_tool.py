@@ -5,6 +5,7 @@ from crewai.tools import tool
 from src.services.yahoo_news_fetcher import YahooNewsFetcher
 from src.tools.qdrant_tools import qdrant_service
 
+
 def get_fetch_yahoo_news_tool(save_to_qdrant: bool = False):
     """
     Tool factory. Returnes configured tool.

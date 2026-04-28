@@ -5,6 +5,7 @@ from crewai.tools import tool
 from src.services.yahoo_analysis_fetcher import YahooAnalysisFetcher
 from src.tools.qdrant_tools import qdrant_service
 
+
 def get_fetch_yahoo_analysis_tool(save_to_qdrant: bool = False):
     """
     Tool factory. Returnes configured tool.

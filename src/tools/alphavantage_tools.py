@@ -104,7 +104,7 @@ def get_analyse_alphavantage_sentiment_tool(save_to_qdrant: bool = False):
                         "Please check if the stock symbol is valid and API key is configured."
             }
             return json.dumps(error_response, indent=2)
-        
+
     return analyse_alphavantage_sentiment
 
 
@@ -151,7 +151,7 @@ def get_company_fundamentals_alpha_tool(save_to_qdrant: bool = False):
             )
 
             if save_to_qdrant:
-                try:  
+                try:
                     qdrant_service.add_evidence(
                         text=evidence_text,
                         metadata={"source": "AlphaVantage Fundamentals", "symbol": stock_symbol}
@@ -166,5 +166,5 @@ def get_company_fundamentals_alpha_tool(save_to_qdrant: bool = False):
                 "message": f"Failed to fetch fundamentals for {stock_symbol}."
             }
             return json.dumps(error_response, indent=2)
-        
+
     return get_company_fundamentals_alpha

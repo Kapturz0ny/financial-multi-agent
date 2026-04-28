@@ -5,6 +5,7 @@ from crewai.tools import tool
 from src.services.yahoo_technical_analyser import YahooTechnicalAnalyser
 from src.tools.qdrant_tools import qdrant_service
 
+
 def get_analyse_technical_indicators_tool(save_to_qdrant: bool = False):
     """
     Tool factory. Returnes configured tool.

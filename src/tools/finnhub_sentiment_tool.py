@@ -86,5 +86,5 @@ def get_analyse_finnhub_sentiment_tool(save_to_qdrant: bool = False):
                         "Please check if the stock symbol is valid and Finnhub API key is configured."
             }
             return json.dumps(error_response, indent=2)
-    
+
     return analyse_finnhub_sentiment
