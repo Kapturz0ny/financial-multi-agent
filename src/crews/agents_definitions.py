@@ -1,21 +1,26 @@
 from crewai import LLM, Agent
 
-from src.tools.alphavantage_tools import analyse_alphavantage_sentiment
-from src.tools.finnhub_sentiment_tool import analyse_finnhub_sentiment
-from src.tools.yahoo_analysis_tool import fetch_yahoo_analysis
-from src.tools.yahoo_fundamental_analysis_tool import analyse_fundamentals
-from src.tools.yahoo_news_tool import fetch_yahoo_news
-from src.tools.yahoo_technical_analysis_tool import analyse_technical_indicators
+from src.tools.alphavantage_tools import get_analyse_alphavantage_sentiment_tool
+from src.tools.finnhub_sentiment_tool import get_analyse_finnhub_sentiment_tool
+from src.tools.yahoo_analysis_tool import get_fetch_yahoo_analysis_tool
+from src.tools.yahoo_fundamental_analysis_tool import get_analyse_fundamentals_tool
+from src.tools.yahoo_news_tool import get_fetch_yahoo_news_tool
+from src.tools.yahoo_technical_analysis_tool import get_analyse_technical_indicators_tool
 
 
-def create_researcher_agent(llm: LLM) -> Agent:
+def create_researcher_agent(llm: LLM, save_to_qdrant: bool = False) -> Agent:
     """Create Researcher agent for data gathering and sentiment analysis."""
     return Agent(
         role="Senior Stock Market Researcher",
         goal="Gather and analyze comprehensive data about {stock_symbol}",
         backstory="With a Ph.D. in Financial Economics and 15 years of experience in equity research, you're known for meticulous data collection and insightful analysis.",
         llm=llm,
-        tools=[analyse_finnhub_sentiment, analyse_alphavantage_sentiment, fetch_yahoo_news, fetch_yahoo_analysis],
+        tools=[
+            get_analyse_finnhub_sentiment_tool(save_to_qdrant=save_to_qdrant),
+            get_analyse_alphavantage_sentiment_tool(save_to_qdrant=save_to_qdrant),
+            get_fetch_yahoo_news_tool(save_to_qdrant=save_to_qdrant),
+            get_fetch_yahoo_analysis_tool(save_to_qdrant=save_to_qdrant),
+        ],
         verbose=True,
         memory=True,
         allow_code_execution=False,
@@ -24,7 +29,7 @@ def create_researcher_agent(llm: LLM) -> Agent:
     )
 
 
-def create_technical_analyst_agent(llm: LLM) -> Agent:
+def create_technical_analyst_agent(llm: LLM, save_to_qdrant: bool = False) -> Agent:
     """Create Technical Analyst agent."""
     return Agent(
         role="Expert Technical Analyst",
@@ -32,7 +37,9 @@ def create_technical_analyst_agent(llm: LLM) -> Agent:
         verbose=True,
         memory=True,
         backstory="As a Chartered Market Technician (CMT) with 15 years of experience, you have a keen eye for chart patterns and market trends.",
-        tools=[analyse_technical_indicators],
+        tools=[
+            get_analyse_technical_indicators_tool(save_to_qdrant=save_to_qdrant)
+        ],
         llm=llm,
         allow_code_execution=False,
         max_iter=8,
@@ -40,7 +47,7 @@ def create_technical_analyst_agent(llm: LLM) -> Agent:
     )
 
 
-def create_fundamental_analyst_agent(llm: LLM) -> Agent:
+def create_fundamental_analyst_agent(llm: LLM, save_to_qdrant: bool = False) -> Agent:
     """Create Fundamental Analyst agent."""
     return Agent(
         role="Senior Fundamental Analyst",
@@ -48,7 +55,9 @@ def create_fundamental_analyst_agent(llm: LLM) -> Agent:
         verbose=True,
         memory=True,
         backstory="With a CFA charter and 15 years of experience in value investing, you dissect financial statements and identify key value drivers.",
-        tools=[analyse_fundamentals],
+        tools=[
+            get_analyse_fundamentals_tool(save_to_qdrant=save_to_qdrant)
+        ],
         llm=llm,
         allow_code_execution=False,
         max_iter=8,
