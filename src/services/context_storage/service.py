@@ -54,9 +54,8 @@ class ContextStorage:
 
     def _save_to_file(self, data: dict):
         """Save the data dictionary to the JSON file."""
-        with self._lock:
-            with open(self.file_path, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
+        with open(self.file_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
 
     def add_facts(self, agent_name: str, facts: list[FactEntry]) -> str:
         with self._lock:
@@ -97,10 +96,12 @@ class ContextStorage:
 
     def get_context(self) -> str:
         """Returns the entire storage as a formatted JSON string."""
-        data = self._load_from_file()
+        with self._lock:
+            data = self._load_from_file()
         return json.dumps(data, separators=(',', ':'))
 
     @property
     def storage(self):
         """Property to access the dictionary directly (e.g. for Streamlit)."""
-        return self._load_from_file()
+        with self._lock:
+            return self._load_from_file()
