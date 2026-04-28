@@ -50,9 +50,9 @@ class GroupChatV1StockAnalysisCrew:
     def _initialize_agents(self):
         """Initialize all agents for group chat mode."""
         # Original 3 specialist agents
-        self.researcher = create_researcher_agent(self.base_llm)
-        self.technical_analyst = create_technical_analyst_agent(self.base_llm)
-        self.fundamental_analyst = create_fundamental_analyst_agent(self.base_llm)
+        self.researcher = create_researcher_agent(self.base_llm, save_to_qdrant=True)
+        self.technical_analyst = create_technical_analyst_agent(self.base_llm, save_to_qdrant=True)
+        self.fundamental_analyst = create_fundamental_analyst_agent(self.base_llm, save_to_qdrant=True)
 
         # Agents for debate
         self.sceptic = create_sceptic_agent_v1(self.base_llm)
@@ -117,7 +117,7 @@ class GroupChatV1StockAnalysisCrew:
                 fundamental_task,
             ],
             process=Process.sequential,
-            verbose=False,
+            verbose=True,
             cache=True,
         )
 
@@ -129,7 +129,7 @@ class GroupChatV1StockAnalysisCrew:
             tasks=[debate_task],
             manager_agent=self.leader,
             process=Process.hierarchical,
-            verbose=False,
+            verbose=True,
         )
 
 
@@ -145,7 +145,7 @@ class GroupChatV1StockAnalysisCrew:
                 agents=[self.reporter],
                 tasks=[reporting_task],
                 process=Process.sequential,
-                verbose=False,
+                verbose=True,
                 cache=False,
             ).kickoff(inputs={"stock_symbol": stock_symbol.upper()})
             execution_time = time() - start_time

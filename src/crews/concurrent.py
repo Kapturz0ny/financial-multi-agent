@@ -50,9 +50,9 @@ class ConcurrentStockAnalysisCrew:
 
     def _initialize_agents(self):
         """Initialize the 4 agents and attach Context Storage + RAG tools."""
-        self.researcher = create_researcher_agent(self.llm)
-        self.technical_analyst = create_technical_analyst_agent(self.llm)
-        self.fundamental_analyst = create_fundamental_analyst_agent(self.llm)
+        self.researcher = create_researcher_agent(self.llm, save_to_qdrant=True)
+        self.technical_analyst = create_technical_analyst_agent(self.llm, save_to_qdrant=True)
+        self.fundamental_analyst = create_fundamental_analyst_agent(self.llm, save_to_qdrant=True)
         self.reporter = create_reporter_agent(self.llm)
 
         def add_tools_to_agent(agent, tools_to_add):
