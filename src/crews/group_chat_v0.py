@@ -21,9 +21,9 @@ class GroupChatV0StockAnalysisCrew:
     def __init__(self, config: LLMConfig):
         self.config = config
         llm_kwargs = {
-            "model": self.config.advanced_model,
+            "model": self.config.base_model,
             "api_key": self.config.api_key,
-            "temperature": self.config.temperature,
+            "temperature": 0.5,
         }
         if self.config.provider == LLMProvider.LOCAL:
             llm_kwargs["base_url"] = self.config.api_base
