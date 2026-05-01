@@ -11,6 +11,7 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import (
     Flowable,
+    Image,
     Paragraph,
     SimpleDocTemplate,
     Spacer,
@@ -59,6 +60,7 @@ class PDFReportExporter:
         execution_time: float,
         time_period: str = "1mo",
         chart_type: str = "Candlestick",
+        evaluation_results: dict = None,
     ) -> BytesIO:
         """
         Export investment report with chart to PDF.
@@ -74,6 +76,7 @@ class PDFReportExporter:
             execution_time: Report generation time in seconds
             time_period: Time period for chart if generating (default: "1mo")
             chart_type: Chart type - "Candlestick" or "Line" (default: "Candlestick")
+            evaluation_results: Optional evaluation results dict from ReportEvaluator
 
         Returns:
             BytesIO object containing PDF ready for download
@@ -102,6 +105,9 @@ class PDFReportExporter:
 
         if indicators and any(indicators.values()):
             self._add_indicators_section(story, indicators)
+
+        if evaluation_results:
+            self._add_evaluation_section(story, evaluation_results)
 
         self._add_chart_image(story, fig)
 
@@ -165,18 +171,78 @@ class PDFReportExporter:
         """Generate chart if not provided."""
         return ChartBuilder.create_chart(ticker, indicators, time_period, chart_type)
 
+    def _add_evaluation_section(self, story: list[Flowable], evaluation_results: dict):
+        """Add report quality evaluation section to PDF."""
+        story.append(Paragraph("<b>Report Quality Evaluation</b>", self.styles["Heading2"]))
+        story.append(Spacer(1, 0.1 * inch))
+
+        # Overall score with grade
+        score = evaluation_results.get('overall_score', 0)
+        grade = evaluation_results.get('grade', 'N/A')
+        eval_text = f"<b>Overall Quality Score:</b> {score}/100 (Grade: {grade})"
+        story.append(Paragraph(eval_text, self.styles["Normal"]))
+        story.append(Spacer(1, 0.1 * inch))
+
+        # Dimension scores
+        dim_scores = evaluation_results.get('dimension_scores', {})
+        if dim_scores:
+            dimensions_data = [["Dimension", "Score"]]
+            for dim_name, dim_score in dim_scores.items():
+                display_name = dim_name.replace('_', ' ').title()
+                dimensions_data.append([display_name, f"{dim_score}/100"])
+
+            dimensions_table = Table(dimensions_data, colWidths=[3.25 * inch, 1.25 * inch])
+            dimensions_table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1f77b4")),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, 0), 10),
+                        ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                        ("BACKGROUND", (0, 1), (-1, -1), colors.lightgrey),
+                        ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                    ]
+                )
+            )
+            story.append(dimensions_table)
+            story.append(Spacer(1, 0.2 * inch))
+
+        # Recommendations
+        recommendations = evaluation_results.get('recommendations', [])
+        if recommendations:
+            story.append(Paragraph("<b>Improvement Recommendations:</b>", self.styles["Heading3"]))
+            story.append(Spacer(1, 0.1 * inch))
+
+            for i, rec in enumerate(recommendations[:5], 1):  # Limit to 5 recommendations
+                rec_text = f"<b>{i}.</b> {rec}"
+                story.append(Paragraph(rec_text, self.styles["Normal"]))
+                story.append(Spacer(1, 0.08 * inch))
+
+            story.append(Spacer(1, 0.15 * inch))
 
     def _add_chart_image(self, story: list[Flowable], fig: go.Figure):
-        """Add chart reference text to PDF."""
+        """Add chart image to PDF."""
         story.append(Paragraph("<b>Interactive Chart</b>", self.styles["Heading2"]))
         story.append(Spacer(1, 0.1 * inch))
 
-        chart_text = (
-            "<i>A detailed interactive chart with price candlesticks/lines and selected technical indicators "
-            "(SMA, EMA, Bollinger Bands) can be viewed in the web application. "
-            "Click the 'Update' button in the sidebar to generate and view the live chart.</i>"
-        )
-        story.append(Paragraph(chart_text, self.styles["Normal"]))
+        try:
+            # Convert Plotly figure to PNG image
+            img_bytes = fig.to_image(format="png", width=800, height=500)
+            img_buffer = BytesIO(img_bytes)
+            
+            # Add image to PDF
+            img = Image(img_buffer, width=6.5 * inch, height=4 * inch)
+            story.append(img)
+        except Exception as e:
+            # Fallback if image conversion fails
+            chart_text = (
+                f"<i>Chart could not be rendered in PDF (error: {str(e)}). "
+                "View the interactive chart in the web application.</i>"
+            )
+            story.append(Paragraph(chart_text, self.styles["Normal"]))
+        
         story.append(Spacer(1, 0.2 * inch))
 
     def _add_report_content(self, story: list[Flowable], report_text: str):

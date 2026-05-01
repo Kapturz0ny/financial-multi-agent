@@ -42,7 +42,7 @@ def require_login() -> dict:
     Render the login form and gate the rest of the app.
 
     Returns:
-        Dict with at least {"username": ..., "name": ...} for the authenticated user.
+        Dict with {"username": ..., "name": ..., "role": ...} for the authenticated user.
         Calls st.stop() if the user is not authenticated.
     """
     if "_authenticator" not in st.session_state:
@@ -63,9 +63,15 @@ def require_login() -> dict:
         st.warning("Please log in to use the platform.")
         st.stop()
 
+    # Get user role from credentials
+    username = st.session_state.get("username")
+    config = _load_config()
+    user_role = config["credentials"]["usernames"].get(username, {}).get("role", "user")
+
     return {
-        "username": st.session_state.get("username"),
+        "username": username,
         "name": st.session_state.get("name"),
+        "role": user_role,
     }
 
 

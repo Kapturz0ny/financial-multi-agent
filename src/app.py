@@ -134,11 +134,24 @@ st.sidebar.header("Configuration")
 st.sidebar.markdown(f"👤 Logged in as **{current_user.get('name') or username}**")
 
 remaining_today = remaining(username)
-if username == "demo":
-    if st.sidebar.button("Reset Demo Limit (Today)", width='stretch'):
-        removed_rows = reset_today_usage(username)
-        remaining_today = remaining(username)
-        st.sidebar.success(f"Demo daily limit reset. Removed entries: {removed_rows}.")
+user_role = current_user.get("role", "user")
+
+# Show reset button only for admin users
+if user_role == "admin":
+    st.sidebar.markdown("**Admin Tools**")
+    user_to_reset = st.sidebar.text_input(
+        "Username to reset",
+        key="reset_user_input",
+        help="Use the login username, e.g., demo or student.",
+    )
+    if st.sidebar.button("🔑 Reset User Limit", width='stretch', disabled=not user_to_reset.strip()):
+        target_user = user_to_reset.strip()
+        removed_rows = reset_today_usage(target_user)
+        target_remaining = remaining(target_user)
+        st.sidebar.success(
+            f"Limit reset for '{target_user}'. Removed entries: {removed_rows}. "
+            f"Remaining today: {target_remaining}/{DAILY_QUERY_LIMIT}."
+        )
 
 st.sidebar.info(f"Queries remaining today: {remaining_today}/{DAILY_QUERY_LIMIT}")
 logout_button(location="sidebar")
@@ -370,29 +383,7 @@ if st.session_state.report is not None:
 
     st.divider()
 
-    # Export to PDF button
-    exporter = PDFReportExporter()
-    pdf_buffer = exporter.export(
-        ticker=ticker,
-        report_text=st.session_state.report,
-        fig=st.session_state.stock_fig,
-        metrics=st.session_state.stock_metrics,
-        indicators=st.session_state.selected_indicators,
-        mode=st.session_state.report_mode,
-        provider=st.session_state.report_provider,
-        execution_time=st.session_state.execution_time
-    )
-
     col_pdf, col_eval = st.columns(2)
-
-    with col_pdf:
-        st.download_button(
-            label="📥 Download Report as PDF",
-            data=pdf_buffer,
-            file_name=f"{ticker.upper()}_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
-            mime="application/pdf",
-            key="download_pdf_btn"
-        )
 
     with col_eval:
         if st.button("📊 Evaluate Report Quality", type="secondary", width='stretch'):
@@ -402,6 +393,29 @@ if st.session_state.report is not None:
                     st.session_state.report,
                     ticker.upper()
                 )
+
+    # Export to PDF button (after evaluation, so results are included)
+    exporter = PDFReportExporter()
+    pdf_buffer = exporter.export(
+        ticker=ticker,
+        report_text=st.session_state.report,
+        fig=st.session_state.stock_fig,
+        metrics=st.session_state.stock_metrics,
+        indicators=st.session_state.selected_indicators,
+        mode=st.session_state.report_mode,
+        provider=st.session_state.report_provider,
+        execution_time=st.session_state.execution_time,
+        evaluation_results=st.session_state.get('evaluation_results')
+    )
+
+    with col_pdf:
+        st.download_button(
+            label="📥 Download Report as PDF",
+            data=pdf_buffer,
+            file_name=f"{ticker.upper()}_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+            mime="application/pdf",
+            key="download_pdf_btn"
+        )
 
     st.divider()
 
