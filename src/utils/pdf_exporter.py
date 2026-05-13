@@ -226,23 +226,13 @@ class PDFReportExporter:
         """Add chart image to PDF."""
         story.append(Paragraph("<b>Interactive Chart</b>", self.styles["Heading2"]))
         story.append(Spacer(1, 0.1 * inch))
-
-        try:
-            # Convert Plotly figure to PNG image
-            img_bytes = fig.to_image(format="png", width=800, height=500)
-            img_buffer = BytesIO(img_bytes)
-            
-            # Add image to PDF
-            img = Image(img_buffer, width=6.5 * inch, height=4 * inch)
-            story.append(img)
-        except Exception as e:
-            # Fallback if image conversion fails
-            chart_text = (
-                f"<i>Chart could not be rendered in PDF (error: {str(e)}). "
-                "View the interactive chart in the web application.</i>"
-            )
-            story.append(Paragraph(chart_text, self.styles["Normal"]))
         
+        chart_text = (
+            "<i>A detailed interactive chart with price candlesticks/lines and selected technical indicators "
+            "(SMA, EMA, Bollinger Bands) can be viewed in the web application. "
+            "Click the 'Update' button in the sidebar to generate and view the live chart.</i>"
+        )
+        story.append(Paragraph(chart_text, self.styles["Normal"]))
         story.append(Spacer(1, 0.2 * inch))
 
     def _add_report_content(self, story: list[Flowable], report_text: str):
