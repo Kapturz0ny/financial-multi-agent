@@ -253,6 +253,7 @@ class PDFReportExporter:
         cleaned_text = report_text
         cleaned_text = re.sub(r'^##\s+(.+)$', r'<font size="16"><b>\1</b></font><br/>', cleaned_text, flags=re.MULTILINE)
         cleaned_text = re.sub(r'^###\s+(.+)$', r'<font size="14"><b>\1</b></font><br/>', cleaned_text, flags=re.MULTILINE)
+        cleaned_text = re.sub(r'^####\s+(.+)$', r'<font size="12"><b>\1</b></font><br/>', cleaned_text, flags=re.MULTILINE)
         cleaned_text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', cleaned_text)
         cleaned_text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', cleaned_text)
 
