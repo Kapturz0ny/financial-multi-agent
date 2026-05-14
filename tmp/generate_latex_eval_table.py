@@ -59,7 +59,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate LaTeX table from repeated crew runs.")
     parser.add_argument("--mode", default="parallel", help="Mode: parallel/sequential/concurrent/group-chat/group-chat-cs-rag")
     parser.add_argument("--provider", default=None, help="Optional provider override (e.g. gemini, openai, local)")
-    parser.add_argument("--tickers", nargs="+", default=["AAPL", "NVDA", "GOOGL"], help="Tickers to evaluate")
+    parser.add_argument("--tickers", nargs="+", default=["AMD", "MSFT"], help="Tickers to evaluate")
     parser.add_argument("--trials", type=int, default=5, help="Number of runs per ticker")
     parser.add_argument("--sleep-seconds", type=float, default=0.0, help="Pause between attempts")
     parser.add_argument("--decimals", type=int, default=1, help="Output decimal precision")
