@@ -11,7 +11,6 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import (
     Flowable,
-    Image,
     Paragraph,
     SimpleDocTemplate,
     Spacer,
@@ -226,7 +225,7 @@ class PDFReportExporter:
         """Add chart image to PDF."""
         story.append(Paragraph("<b>Interactive Chart</b>", self.styles["Heading2"]))
         story.append(Spacer(1, 0.1 * inch))
-        
+
         chart_text = (
             "<i>A detailed interactive chart with price candlesticks/lines and selected technical indicators "
             "(SMA, EMA, Bollinger Bands) can be viewed in the web application. "
@@ -241,6 +240,7 @@ class PDFReportExporter:
         story.append(Spacer(1, 0.15 * inch))
 
         cleaned_text = report_text
+        cleaned_text = re.sub(r'^#\s+(.+)$', r'<font size="18"><b>\1</b></font><br/>', cleaned_text, flags=re.MULTILINE)
         cleaned_text = re.sub(r'^##\s+(.+)$', r'<font size="16"><b>\1</b></font><br/>', cleaned_text, flags=re.MULTILINE)
         cleaned_text = re.sub(r'^###\s+(.+)$', r'<font size="14"><b>\1</b></font><br/>', cleaned_text, flags=re.MULTILINE)
         cleaned_text = re.sub(r'^####\s+(.+)$', r'<font size="12"><b>\1</b></font><br/>', cleaned_text, flags=re.MULTILINE)
