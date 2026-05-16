@@ -22,7 +22,7 @@ def create_researcher_agent(llm: LLM, save_to_qdrant: bool = False) -> Agent:
             get_fetch_yahoo_analysis_tool(save_to_qdrant=save_to_qdrant),
         ],
         verbose=True,
-        memory=True,
+        memory=False,
         allow_code_execution=False,
         max_iter=8,
         max_execution_time=180,
@@ -35,7 +35,7 @@ def create_technical_analyst_agent(llm: LLM, save_to_qdrant: bool = False) -> Ag
         role="Expert Technical Analyst",
         goal="Perform an in-depth technical analysis on {stock_symbol}",
         verbose=True,
-        memory=True,
+        memory=False,
         backstory="As a Chartered Market Technician (CMT) with 15 years of experience, you have a keen eye for chart patterns and market trends.",
         tools=[
             get_analyse_technical_indicators_tool(save_to_qdrant=save_to_qdrant)
@@ -53,7 +53,7 @@ def create_fundamental_analyst_agent(llm: LLM, save_to_qdrant: bool = False) -> 
         role="Senior Fundamental Analyst",
         goal="Conduct a comprehensive fundamental analysis of {stock_symbol}",
         verbose=True,
-        memory=True,
+        memory=False,
         backstory="With a CFA charter and 15 years of experience in value investing, you dissect financial statements and identify key value drivers.",
         tools=[
             get_analyse_fundamentals_tool(save_to_qdrant=save_to_qdrant)
@@ -71,7 +71,7 @@ def create_reporter_agent(llm: LLM) -> Agent:
         role="Chief Investment Strategist",
         goal="Synthesize all analyses to create a definitive investment report on {stock_symbol}",
         verbose=True,
-        memory=True,
+        memory=False,
         backstory="As a seasoned investment strategist with 20 years of experience, you weave complex financial data into compelling investment narratives.",
         llm=llm,
         allow_code_execution=False,
@@ -89,7 +89,7 @@ def create_sceptic_agent_v0(llm: LLM) -> Agent:
         llm=llm,
         tools=[],
         verbose=True,
-        memory=True,
+        memory=False,
         allow_code_execution=False,
     )
 
@@ -103,7 +103,7 @@ def create_trust_agent_v0(llm: LLM) -> Agent:
         llm=llm,
         tools=[],
         verbose=True,
-        memory=True,
+        memory=False,
         allow_code_execution=False,
     )
 
@@ -117,7 +117,7 @@ def create_leader_agent_v0(llm: LLM) -> Agent:
         llm=llm,
         tools=[],
         verbose=True,
-        memory=True,
+        memory=False,
         allow_code_execution=False,
         allow_delegation=True,
     )
@@ -137,7 +137,7 @@ def create_sceptic_agent_v1(llm: LLM) -> Agent:
         llm=llm,
         tools=[],
         verbose=True,
-        memory=True,
+        memory=False,
         allow_code_execution=False,
     )
 
@@ -156,7 +156,7 @@ def create_trust_agent_v1(llm: LLM) -> Agent:
         llm=llm,
         tools=[],
         verbose=True,
-        memory=True,
+        memory=False,
         allow_code_execution=False,
     )
 
@@ -181,6 +181,6 @@ def create_leader_agent_v1(llm: LLM) -> Agent:
         llm=llm,
         tools=[],
         verbose=True,
-        memory=True,
+        memory=False,
         allow_code_execution=False,
     )
