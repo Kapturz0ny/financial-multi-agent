@@ -1,11 +1,12 @@
 import json
 import os
 import requests
+import litellm
 from src.config import LLMConfig
 
 class SentimentAnalyser:
     """
-    A class to analyse sentiment using Ollama via network request.
+    A class to analyse sentiment using LLMs via network request or litellm.
     This replaces the local Transformers model to avoid AVX2 CPU lockups.
     """
 
@@ -25,7 +26,30 @@ class SentimentAnalyser:
         if self.llm_config.provider.value == "local":
             return self._analyse_ollama(text)
         else:
-            return "neutral"  # Fallback for now if not local
+            return self._analyse_litellm(text)
+
+    def _analyse_litellm(self, text: str) -> str:
+        """Use litellm to ask OpenAI/Gemini for sentiment."""
+        prompt = (
+            "Analyze the sentiment of the following text. "
+            "Respond ONLY with one word: 'positive', 'neutral', or 'negative'. "
+            f"Text: {text}"
+        )
+        try:
+            os.environ["OPENAI_API_KEY"] = self.llm_config.api_key
+            response = litellm.completion(
+                model=self.llm_config.base_model,
+                messages=[{"role": "user", "content": prompt}],
+                api_key=self.llm_config.api_key,
+                temperature=0.0
+            )
+            result = response.choices[0].message.content.strip().lower()
+            if "positive" in result: return "positive"
+            if "negative" in result: return "negative"
+            return "neutral"
+        except Exception as e:
+            print(f"Error during sentiment analysis with litellm: {e}")
+            return "neutral"
 
     def _analyse_ollama(self, text: str) -> str:
         url = f"{self.llm_config.api_base}/api/generate"
