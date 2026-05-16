@@ -31,7 +31,7 @@ class ConcurrentStockAnalysisCrew:
     """
 
     # Hard caps to prevent runaway behavior in the parallel rounds.
-    PER_TASK_TIMEOUT_S = 300  # ThreadPoolExecutor future timeout per specialist task
+    PER_TASK_TIMEOUT_S = 1800  # ThreadPoolExecutor future timeout per specialist task
     CREW_MAX_RPM = 50         # CrewAI per-Crew RPM throttle (mitigates 429s)
 
     def __init__(self, config: LLMConfig):
