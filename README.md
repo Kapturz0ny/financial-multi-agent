@@ -14,21 +14,19 @@ The final output is a cohesive investment report in Markdown format, offering an
 ## Features
 
 * **Multi-Agent Analysis with Multiple Modes:** Utilizes a team of AI agents (powered by CrewAI) for specialized tasks:
-    * **Sequential Mode:** Linear workflow with 4 agents
-        * **Senior Stock Market Researcher:** Gathers qualitative data, public sentiment from Reddit, Yahoo News, and Yahoo financial analyses.
-        * **Expert Technical Analyst:** Performs in-depth technical analysis using a wide array of indicators.
-        * **Senior Fundamental Analyst:** Conducts comprehensive fundamental analysis of the company's financial health, valuation, and market position using Yahoo Finance data.
-        * **Chief Investment Strategist:** Synthesizes all analyses into a final investment report.
-    * **Group Chat Mode (FinDebate):** Hierarchical debate with 6 agents
-        * Original 3 specialist agents (Researcher, Technical Analyst, Fundamental Analyst)
-        * **Devil's Advocate (Sceptic):** Challenges assumptions and identifies risks
-        * **Data Verification Specialist:** Validates data accuracy and source credibility
-        * **Discussion Moderator & Chief Synthesizer (Leader):** Orchestrates the debate and synthesizes final recommendation
-* **Dual LLM Provider Support:** 
+    * **Sequential Mode:** Linear workflow with 4 agents (Researcher, Technical Analyst, Fundamental Analyst, Reporter).
+    * **Parallel Mode:** Asynchronous execution where agents gather data independently, increasing speed.
+    * **Concurrent Mode:** Advanced 3-round execution. Agents gather data in parallel, cross-reference their findings via a shared Context Blackboard, and the Reporter synthesizes the final report.
+    * **Group Chat Mode (FinDebate):** Hierarchical debate with Sceptic and Trust agents challenging and verifying claims.
+* **Multiple LLM Provider Support:** 
     * **Gemini** (Google) - Default provider with fast lite models
     * **OpenAI** - Alternative provider with GPT-4 models
+    * **Local LLM** - Support for local models (e.g., Llama 3.1) via Ollama, used as a fallback or explicit choice to preserve API quotas.
     * Easy provider switching via UI dropdown or `.env` configuration
 * **Interactive Web Interface:** Built with Streamlit for easy user interaction, allowing users to input stock symbols and view charts and reports.
+* **Shared Context & RAG (Vector Database):**
+    * Uses **Qdrant** to store raw evidence from external APIs (Retrieval-Augmented Generation).
+    * Shared JSON Blackboard for agents to post facts and debate claims (`refutes_id` logic).
 * **Data Sources:**
     * **Yahoo Finance (yfinance):** For historical stock data, company information, financial news, analyst estimates, and fundamental data.
     * **Reddit:** For public sentiment analysis on specified subreddits (e.g., r/wallstreetbets, r/stocks, r/investing).
@@ -53,6 +51,13 @@ The platform operates using a multi-agent system orchestrated by CrewAI with two
    - **Reporter** synthesizes all outputs into a comprehensive investment report
 4. Final report is displayed in the Streamlit application.
 
+### Concurrent Mode
+1. User inputs a stock symbol.
+2. A `ConcurrentStockAnalysisCrew` uses a shared Context Storage (Blackboard) and Qdrant (RAG).
+3. **Round 1:** Analysts (Researcher, Technical, Fundamental) fetch data in parallel, store raw evidence in Qdrant, and post Facts to Context Storage.
+4. **Round 2:** Analysts read each other's facts and add cross-awareness Claims (attacking or supporting other findings via `refutes_id`).
+5. **Round 3:** Reporter queries Qdrant and the Blackboard to synthesize a comprehensive report covering all nuanced debates.
+
 ### Group Chat Mode (FinDebate - New)
 1. User selects "Group Chat" mode in the UI.
 2. A `GroupChatStockAnalysisCrew` is initialized with 6 agents in a hierarchical structure.
@@ -67,6 +72,7 @@ The platform operates using a multi-agent system orchestrated by CrewAI with two
 ### LLM Provider Configuration
 - **Gemini (Default):** Uses `gemini-2.0-flash-lite` (sequential) and `gemini-2.0-flash` (group chat)
 - **OpenAI:** Uses `gpt-4o-mini` (sequential) and `gpt-4o` (group chat)
+- **Local:** Uses Ollama with `qwen2.5:32b-instruct-q4_K_M` (or other compatible models like 8B) for offline execution.
 - Provider can be changed via UI dropdown or configured in `.env` file
 
 ## Technologies Used
@@ -76,6 +82,8 @@ The platform operates using a multi-agent system orchestrated by CrewAI with two
     * CrewAI (`>=1.6.1`) - Multi-agent orchestration framework
     * Google Gemini API (via CrewAI LLM integration)
     * OpenAI API (gpt-4o family models)
+    * Ollama (Local LLM inference)
+    * Qdrant (Vector Database for RAG)
     * Transformers (`>=4.51.3`) (for local sentiment analysis model)
     * PyTorch (`>=2.7.0`)
 * **Data Handling & Analysis:**
@@ -121,19 +129,27 @@ The platform operates using a multi-agent system orchestrated by CrewAI with two
     LLM_PROVIDER="gemini"
     GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
     OPENAI_API_KEY="YOUR_OPENAI_API_KEY"
+    LOCAL_LLM_BASE_URL="http://192.168.162.165:11434"
+    LOCAL_LLM_MODEL="qwen2.5:32b-instruct-q4_K_M"
     ```
     Replace the placeholder values with your actual API keys.
     * **Reddit API Credentials:** Create an app on Reddit to get these https://www.reddit.com/prefs/apps. `REDDIT_CLIENT_ID` will be in the left top corner, `REDDIT_CLIENT_SECRET` will be next **secret** field, and `REDDIT_USER_AGENT` can be any string that describes your application.
-    * **LLM Provider:** Select `gemini` or `openai`. In the application you can change the provider from the dropdown menu.
+    * **LLM Provider:** Select `gemini`, `openai`, or `local`. In the application you can change the provider from the dropdown menu.
       - **Gemini:** Pobierz klucz z https://aistudio.google.com/app/apikey
       - **OpenAI:** Pobierz klucz z https://platform.openai.com/api-keys
 
 ## Running the Application
 
-Once the setup is complete, run the Streamlit application:
+The application requires a running **Qdrant** database container alongside the Streamlit interface. It is highly recommended to run the app using Docker Compose.
+
 ```bash
-uv run streamlit run src/app.py
+docker compose up -d --build
 ```
+This will start both the Vector database on port `6333` and the Streamlit App on port `8501`.
+
+Alternatively, if running locally outside docker:
+1. Start Qdrant manually: `docker run -p 6333:6333 -v ./qdrant_storage:/qdrant/storage qdrant/qdrant`
+2. Run Streamlit: `uv run streamlit run src/app.py`
 
 ### Using the Application
 
