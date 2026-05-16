@@ -25,7 +25,7 @@ def create_researcher_agent(llm: LLM, save_to_qdrant: bool = False) -> Agent:
         memory=False,
         allow_code_execution=False,
         max_iter=8,
-        max_execution_time=180,
+        max_execution_time=1800,
     )
 
 
@@ -43,7 +43,7 @@ def create_technical_analyst_agent(llm: LLM, save_to_qdrant: bool = False) -> Ag
         llm=llm,
         allow_code_execution=False,
         max_iter=8,
-        max_execution_time=180,
+        max_execution_time=1800,
     )
 
 
@@ -61,7 +61,7 @@ def create_fundamental_analyst_agent(llm: LLM, save_to_qdrant: bool = False) -> 
         llm=llm,
         allow_code_execution=False,
         max_iter=8,
-        max_execution_time=180,
+        max_execution_time=1800,
     )
 
 
@@ -76,7 +76,7 @@ def create_reporter_agent(llm: LLM) -> Agent:
         llm=llm,
         allow_code_execution=False,
         max_iter=8,
-        max_execution_time=180,
+        max_execution_time=1800,
     )
 
 
