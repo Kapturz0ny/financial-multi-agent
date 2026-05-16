@@ -1,42 +1,54 @@
-import torch
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
-
-torch.classes.__path__ = []
-
+import json
+import os
+import requests
+from src.config import LLMConfig
 
 class SentimentAnalyser:
     """
-    A class to analyse sentiment using a pre-trained model.
-    This class uses the Hugging Face Transformers library to load a pre-trained
-    sentiment analysis model and tokenizer. It provides a method to analyse the
-    sentiment of a given text input.
-    Attributes:
-        tokenizer (AutoTokenizer): The tokenizer for the pre-trained model.
-        model (AutoModelForSequenceClassification): The pre-trained sentiment analysis model.
-        labels (list): List of sentiment labels.
+    A class to analyse sentiment using Ollama via network request.
+    This replaces the local Transformers model to avoid AVX2 CPU lockups.
     """
 
     def __init__(self):
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            "mrm8488/distilroberta-finetuned-financial-news-sentiment-analysis"
-        )
-        self.model = AutoModelForSequenceClassification.from_pretrained(
-            "mrm8488/distilroberta-finetuned-financial-news-sentiment-analysis"
-        )
+        # Default LLM provider context
+        self.llm_config = LLMConfig(os.getenv("SELECTED_LLM_PROVIDER", "local"))
         self.labels = ["negative", "neutral", "positive"]
 
     def analyse(self, text: str) -> str:
         """
-        Analyses the sentiment of the given text.
-        Args:
-            text (str): The input text to analyse.
-        Returns:
-            str: The sentiment label ('positive', 'neutral', 'negative').
+        Analyses the sentiment of the given text using the external LLM.
         """
-        if not text or text.strip() in ("[removed]", "[deleted]"):
+        # Truncate text to avoid context limits
+        if len(text) > 2000:
+            text = text[:2000]
+
+        if self.llm_config.provider.value == "local":
+            return self._analyse_ollama(text)
+        else:
+            return "neutral"  # Fallback for now if not local
+
+    def _analyse_ollama(self, text: str) -> str:
+        url = f"{self.llm_config.api_base}/api/generate"
+        prompt = (
+            "Analyze the sentiment of the following text. "
+            "Respond ONLY with one word: 'positive', 'neutral', or 'negative'. "
+            f"Text: {text}"
+        )
+        
+        payload = {
+            "model": "qwen2.5:32b-instruct-q4_K_M",
+            "prompt": prompt,
+            "stream": False
+        }
+        
+        try:
+            response = requests.post(url, json=payload, timeout=30)
+            response.raise_for_status()
+            result = response.json().get("response", "").strip().lower()
+            
+            if "positive" in result: return "positive"
+            if "negative" in result: return "negative"
             return "neutral"
-        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
-        with torch.inference_mode():
-            outputs = self.model(**inputs)
-        scores = outputs.logits.softmax(dim=1).numpy()[0]
-        return self.labels[scores.argmax()]
+        except Exception as e:
+            print(f"Error during sentiment analysis with Ollama: {e}")
+            return "neutral"
