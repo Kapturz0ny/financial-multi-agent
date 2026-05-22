@@ -86,6 +86,9 @@ Pull the selected model. Given the 24GB VRAM constraint of the RTX 3090 Ti, we d
 ```bash
 # Recommended default model for 24GB GPU: Qwen 2.5 32B in Q4_K_M
 ollama pull qwen2.5:32b-instruct-q4_K_M  
+
+# Pull the embedding model required for vector search/RAG capabilities:
+ollama pull nomic-embed-text
 ```
 Check `ollama list` to verify models are successfully stored on `/mnt/storage`.
 
@@ -120,12 +123,22 @@ git clone <YOUR_REPO_URL> financial-multi-agent
 cd financial-multi-agent
 ```
 
-In the `.env` file, configure the backend to use the GPU Server IP:
+Configure environment variables:
+```bash
+cp .env.example .env
+```
+Edit the `.env` file (`nano .env`) to set up your external API keys (OpenAI/Gemini, Reddit, Finnhub, etc.). Then, explicitly configure the backend to use the GPU Server IP for the local LLM:
 ```env
 LOCAL_LLM_BASE_URL=http://192.168.162.165:11434
 LOCAL_LLM_MODEL=qwen2.5:32b-instruct-q4_K_M
 ```
 *Note: `LOCAL_LLM_BASE_URL` is the **Ollama root URL**, WITHOUT `/v1` at the end.*
+
+Configure user authentication for the UI:
+```bash
+cp src/auth/credentials.example.yaml src/auth/credentials.yaml
+```
+Edit `src/auth/credentials.yaml` (`nano src/auth/credentials.yaml`) and set up your usernames and passwords for accessing the Streamlit web application.
 
 Start the application stack (app + Qdrant) via Docker Compose:
 ```bash
