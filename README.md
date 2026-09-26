@@ -129,7 +129,7 @@ The platform operates using a multi-agent system orchestrated by CrewAI with two
     LLM_PROVIDER="gemini"
     GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
     OPENAI_API_KEY="YOUR_OPENAI_API_KEY"
-    LOCAL_LLM_BASE_URL="http://192.168.162.165:11434"
+    LOCAL_LLM_BASE_URL="http://<GPU_SERVER_IP>:11434"
     LOCAL_LLM_MODEL="qwen2.5:32b-instruct-q4_K_M"
     ```
     Replace the placeholder values with your actual API keys.

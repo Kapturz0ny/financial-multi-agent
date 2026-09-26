@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "stock-analysis-platform"
 version = "0.1.0"
-description = "Add your description here"
+description = "Multi-agent LLM platform for stock investment analysis with CrewAI, Streamlit and Qdrant"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
