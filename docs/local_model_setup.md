@@ -8,15 +8,15 @@ The application deployment is split between two separate servers to isolate the 
 
 | Role | Hostname / IP | Specifications | OS / Access |
 |---|---|---|---|
-| **GPU Server** (Ollama) | `192.168.162.165` | 1x NVIDIA RTX 3090 Ti 24 GB | Ubuntu (analogous to lab servers), account with `sudo` access |
-| **Web App VM** | `nlp01.ii.pw.edu.pl`<br>`192.168.162.238` | 8 vCPU, 16 GB RAM, 256 GB Disk | Ubuntu 24.04.4 LTS Server Minimal, user `mmatusz4` (`sudo` group) |
+| **GPU Server** (Ollama) | `<GPU_SERVER_IP>` | 1x NVIDIA RTX 3090 Ti 24 GB | Ubuntu (analogous to lab servers), account with `sudo` access |
+| **Web App VM** | `<APP_HOSTNAME>`<br>`<APP_VM_IP>` | 8 vCPU, 16 GB RAM, 256 GB Disk | Ubuntu 24.04.4 LTS Server Minimal, user `<APP_USER>` (`sudo` group) |
 
 **Note: Both machines are accessed via SSH using passwords (e.g., `<PASSWORD_FROM_EMAIL>`). Do NOT store these passwords in the repository.**
 
 ### Recommended Communication Architecture:
 
 ```text
-[ Web App VM (192.168.162.238) ] ======= HTTP =======> [ GPU Server (192.168.162.165) ]
+[ Web App VM (<APP_VM_IP>) ] ======= HTTP =======> [ GPU Server (<GPU_SERVER_IP>) ]
                                                            Port: 11434/tcp
     Stack:                                                 Stack: Ollama API
       - nginx (Reverse Proxy)                              Model: qwen2.5:32b-instruct-q4_K_M
@@ -38,7 +38,7 @@ The GPU Server has a dedicated mounted disk at `/mnt/storage` (device `/dev/sdb3
 ```
 
 ### Initializing the storage:
-Connect to the GPU server (`ssh <USER>@192.168.162.165`) and prepare the directory:
+Connect to the GPU server (`ssh <USER>@<GPU_SERVER_IP>`) and prepare the directory:
 ```bash
 sudo mkdir -p /mnt/storage/ollama/models
 sudo chown -R $USER:$USER /mnt/storage/ollama
@@ -46,7 +46,7 @@ sudo chown -R $USER:$USER /mnt/storage/ollama
 
 ---
 
-## 3. GPU Server Setup (192.168.162.165)
+## 3. GPU Server Setup (<GPU_SERVER_IP>)
 
 ### Step 3.1: Install Ollama (Linux, one-time)
 Ollama acts as the inference server providing the HTTP API for the local model.
@@ -77,7 +77,7 @@ sudo systemctl restart ollama
 
 Open port `11434` on the firewall **strictly** for the Web App VM:
 ```bash
-sudo ufw allow from 192.168.162.238 to any port 11434 proto tcp
+sudo ufw allow from <APP_VM_IP> to any port 11434 proto tcp
 ```
 
 ### Step 3.3: Downloading the model setup
@@ -94,11 +94,11 @@ Check `ollama list` to verify models are successfully stored on `/mnt/storage`.
 
 ---
 
-## 4. Web App VM Setup (nlp01.ii.pw.edu.pl)
+## 4. Web App VM Setup (<APP_HOSTNAME>)
 
 Connect to the VM:
 ```bash
-ssh mmatusz4@192.168.162.238
+ssh <APP_USER>@<APP_VM_IP>
 # Password: <PASSWORD_FROM_EMAIL>
 ```
 
@@ -112,7 +112,7 @@ sudo apt install -y git curl wget nginx xdg-utils
 # Install Docker using the official repository script:
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
-sudo usermod -aG docker mmatusz4
+sudo usermod -aG docker <APP_USER>
 newgrp docker
 ```
 
@@ -129,7 +129,7 @@ cp .env.example .env
 ```
 Edit the `.env` file (`nano .env`) to set up your external API keys (OpenAI/Gemini, Reddit, Finnhub, etc.). Then, explicitly configure the backend to use the GPU Server IP for the local LLM:
 ```env
-LOCAL_LLM_BASE_URL=http://192.168.162.165:11434
+LOCAL_LLM_BASE_URL=http://<GPU_SERVER_IP>:11434
 LOCAL_LLM_MODEL=qwen2.5:32b-instruct-q4_K_M
 ```
 *Note: `LOCAL_LLM_BASE_URL` is the **Ollama root URL**, WITHOUT `/v1` at the end.*
@@ -154,7 +154,7 @@ Add the routing block:
 ```nginx
 server {
     listen 80;
-    server_name nlp01.ii.pw.edu.pl 192.168.162.238;
+    server_name <APP_HOSTNAME> <APP_VM_IP>;
 
     location / {
         proxy_pass http://127.0.0.1:8501;
@@ -176,16 +176,16 @@ sudo systemctl restart nginx
 
 ## 5. End-to-end Communication Test
 
-From the Web App VM (`nlp01`):
+From the Web App VM (`<APP_HOSTNAME>`):
 
 ```bash
-curl http://192.168.162.165:11434/api/tags
+curl http://<GPU_SERVER_IP>:11434/api/tags
 ```
 Expected: JSON with a list of models confirming the connection to the GPU server.
 
 Inference test:
 ```bash
-curl http://192.168.162.165:11434/api/generate -d '{
+curl http://<GPU_SERVER_IP>:11434/api/generate -d '{
   "model": "qwen2.5:32b-instruct-q4_K_M",
   "prompt": "Reply with just OK.",
   "stream": false
@@ -203,7 +203,7 @@ In the application UI: log in, select `Local Llama` in "LLM Provider", start the
 | `CUDA out of memory` or extreme slowness (≫1 s/token) | The model weight (~40 GB) exceeds the 3090 Ti's 24GB VRAM. It offloads to extremely slow system RAM. **Solution:** Switch to a smaller model (e.g., `qwen2.5:32b`, `llama3.1:8b`). |
 | Root partition running out of space | The model was accidentally downloaded to the root drive. Ensure `Environment="OLLAMA_MODELS=/mnt/storage/ollama/models"` is set in `ollama.service` and Ollama was restarted properly. |
 | First request takes 30-60 s | The model is being loaded into VRAM. Set `OLLAMA_KEEP_ALIVE=2h`. |
-| `connection refused` from application | Check if `OLLAMA_HOST=0.0.0.0:11434` is set. Verify UFW allows traffic from `192.168.162.238`. Check network with `ping 192.168.162.165`. |
+| `connection refused` from application | Check if `OLLAMA_HOST=0.0.0.0:11434` is set. Verify UFW allows traffic from `<APP_VM_IP>`. Check network with `ping <GPU_SERVER_IP>`. |
 | `model 'X' not found` | Downloaded model is missing. Run `ollama pull <name>` on the GPU server. |
 | Concurrent requests limit | One Ollama server = one request at a time by default. |
 
