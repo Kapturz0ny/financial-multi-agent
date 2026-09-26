@@ -1,8 +1,10 @@
-import json
 import os
-import requests
+
 import litellm
+import requests
+
 from src.config import LLMConfig
+
 
 class SentimentAnalyser:
     """
@@ -44,8 +46,10 @@ class SentimentAnalyser:
                 temperature=0.0
             )
             result = response.choices[0].message.content.strip().lower()
-            if "positive" in result: return "positive"
-            if "negative" in result: return "negative"
+            if "positive" in result:
+                return "positive"
+            if "negative" in result:
+                return "negative"
             return "neutral"
         except Exception as e:
             print(f"Error during sentiment analysis with litellm: {e}")
@@ -58,20 +62,22 @@ class SentimentAnalyser:
             "Respond ONLY with one word: 'positive', 'neutral', or 'negative'. "
             f"Text: {text}"
         )
-        
+
         payload = {
             "model": "qwen2.5:32b-instruct-q4_K_M",
             "prompt": prompt,
             "stream": False
         }
-        
+
         try:
             response = requests.post(url, json=payload, timeout=30)
             response.raise_for_status()
             result = response.json().get("response", "").strip().lower()
-            
-            if "positive" in result: return "positive"
-            if "negative" in result: return "negative"
+
+            if "positive" in result:
+                return "positive"
+            if "negative" in result:
+                return "negative"
             return "neutral"
         except Exception as e:
             print(f"Error during sentiment analysis with Ollama: {e}")

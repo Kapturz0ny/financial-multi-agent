@@ -1,13 +1,13 @@
 import os
 import uuid
-import requests
 from typing import Any, Dict, List
+
 import litellm
-
+import requests
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, PointStruct
+from qdrant_client.models import Distance, PointStruct, VectorParams
 
-from src.config import get_qdrant_config, LLMConfig
+from src.config import LLMConfig, get_qdrant_config
 
 
 class QdrantService:
